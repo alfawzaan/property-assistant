@@ -26,7 +26,7 @@ Do not use it for:
    - Explain the exact amount in NGN and the terms before requesting payment.
    - When the prospect agrees, call `initialize_paystack_payment` and send them the official Paystack checkout link.
    - When they say they have paid, call `get_payment_status`.
-   - If status is `verified_success`, call `issue_receipt`, confirm their booking or reservation, and notify the agent via `notify_agent`.
+   - If status is `verified_success`, confirm their booking using the returned `receipt_id` and assure them their assigned agent has been notified.
    - If status is `pending` or `failed`, explain that the payment hasn't cleared yet and offer to check again or retry.
 6. **Handle Purchase Offers & Agent Connection**:
    - When a buyer decides to make an offer or initiate a purchase, record their offer details via `update_lead`.

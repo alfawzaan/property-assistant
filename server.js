@@ -21,9 +21,9 @@ app.use((req, res, next) => {
 });
 
 // 1. Get or Create Lead
-app.post('/leads/get-or-create', (req, res) => {
+app.post('/leads/get-or-create', async (req, res) => {
   const { channel_id, sender_id } = req.body;
-  const lead = store.getOrCreateLead(channel_id, sender_id);
+  const lead = await store.getOrCreateLead(channel_id, sender_id);
   res.json({
     lead_id: lead.lead_id,
     owner_agent_id: lead.owner_agent_id,
@@ -33,9 +33,9 @@ app.post('/leads/get-or-create', (req, res) => {
 });
 
 // 2. Update Lead Requirements & Offers
-app.post('/leads/update', (req, res) => {
+app.post('/leads/update', async (req, res) => {
   const { lead_id, budget_max_ngn, bedrooms, location, transaction_type, offer_details } = req.body;
-  const updated = store.updateLead(lead_id, {
+  const updated = await store.updateLead(lead_id, {
     budget_max_ngn,
     bedrooms: bedrooms ? parseInt(bedrooms) : undefined,
     location,
@@ -104,9 +104,9 @@ app.post('/bookings/check-slot', (req, res) => {
 });
 
 // 5. Book Viewing & Save to State
-app.post('/bookings/book', (req, res) => {
+app.post('/bookings/book', async (req, res) => {
   const { lead_id, property_id, slot_time } = req.body;
-  const booking = store.createBooking(lead_id, property_id, slot_time);
+  const booking = await store.createBooking(lead_id, property_id, slot_time);
   
   res.json({
     booking_id: booking.booking_id,
@@ -181,7 +181,7 @@ app.post('/payments/paystack/initialize', async (req, res) => {
   }
 
   // Persist pending payment record
-  const paymentRecord = store.createPayment({
+  const paymentRecord = await store.createPayment({
     payment_id: reference,
     lead_id,
     booking_id,
@@ -320,9 +320,9 @@ app.get('/payments/paystack/status', async (req, res) => {
 });
 
 // 9. Create Human Handoff & Save Record
-app.post('/handoffs/create', (req, res) => {
+app.post('/handoffs/create', async (req, res) => {
   const { lead_id, reason, summary } = req.body;
-  const handoff = store.createHandoff(lead_id, reason, summary);
+  const handoff = await store.createHandoff(lead_id, reason, summary);
   console.log(`\x1b[33m[HUMAN HANDOFF]\x1b[0m ${handoff.handoff_id} for ${lead_id}: ${reason}`);
   res.json({
     handoff_id: handoff.handoff_id,
@@ -334,20 +334,26 @@ app.post('/handoffs/create', (req, res) => {
 
 // Helper to fetch live transactions directly from Paystack API and merge with state
 async function getUnifiedState() {
-  const localState = store.getAllState();
+  const localState = await store.getAllState();
   let payments = [...localState.payments];
   let bookings = [...localState.bookings];
 
   if (PAYSTACK_SECRET_KEY) {
     try {
-      const response = await fetch('https://api.paystack.co/transaction?perPage=25', {
+      const response = await fetch('https://api.paystack.co/transaction?perPage=50', {
         headers: {
           'Authorization': `Bearer ${PAYSTACK_SECRET_KEY}`
         }
       });
       const data = await response.json();
       if (data.status && Array.isArray(data.data)) {
-        const paystackPayments = data.data.map(tx => {
+        // Only include transactions that belong to this Property Assistant app (starts with REF- or has fee_id)
+        const propertyAssistantTxs = data.data.filter(tx => 
+          (tx.reference && tx.reference.startsWith('REF-')) || 
+          (tx.metadata && (tx.metadata.fee_id || tx.metadata.lead_id || tx.metadata.booking_id))
+        );
+
+        const paystackPayments = propertyAssistantTxs.map(tx => {
           const meta = tx.metadata || {};
           const isSuccess = tx.status === 'success';
           

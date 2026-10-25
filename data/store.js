@@ -38,10 +38,23 @@ function saveLocalState() {
   } catch (err) {}
 }
 
-loadLocalState();
+// Sync properties from Cloud Firestore if connected
+async function syncPropertiesFromFirestore() {
+  const db = getFirestore();
+  if (db) {
+    try {
+      const snap = await db.collection('properties').get();
+      if (!snap.empty) {
+        state.properties = snap.docs.map(doc => doc.data());
+      }
+    } catch (err) {}
+  }
+}
+syncPropertiesFromFirestore();
 
 module.exports = {
   getProperties: () => state.properties,
+  syncProperties: syncPropertiesFromFirestore,
   getPropertyById: (id) => state.properties.find(p => p.property_id.toUpperCase() === (id || '').toUpperCase()),
 
   // Leads
@@ -313,19 +326,25 @@ module.exports = {
     const db = getFirestore();
     if (db) {
       try {
-        const [leadsSnap, bookingsSnap, paymentsSnap, handoffsSnap] = await Promise.all([
+        const [leadsSnap, bookingsSnap, paymentsSnap, handoffsSnap, propertiesSnap] = await Promise.all([
           db.collection('leads').orderBy('created_at', 'desc').limit(50).get(),
           db.collection('bookings').orderBy('created_at', 'desc').limit(50).get(),
           db.collection('payments').orderBy('created_at', 'desc').limit(50).get(),
-          db.collection('handoffs').orderBy('created_at', 'desc').limit(50).get()
+          db.collection('handoffs').orderBy('created_at', 'desc').limit(50).get(),
+          db.collection('properties').get()
         ]);
+
+        if (!propertiesSnap.empty) {
+          state.properties = propertiesSnap.docs.map(d => d.data());
+        }
 
         return {
           total_properties: state.properties.length,
           leads: leadsSnap.docs.map(d => d.data()),
           bookings: bookingsSnap.docs.map(d => d.data()),
           payments: paymentsSnap.docs.map(d => d.data()),
-          handoffs: handoffsSnap.docs.map(d => d.data())
+          handoffs: handoffsSnap.docs.map(d => d.data()),
+          properties: state.properties
         };
       } catch (err) {
         console.error('Firestore getAllState error:', err.message);

@@ -122,7 +122,7 @@ app.post('/bookings/book', async (req, res) => {
 
 // 6. Get Payable Fee
 app.get('/payments/fees', (req, res) => {
-  const feeType = req.query.fee_type || 'inspection';
+  const feeType = (req.query.fee_type || 'inspection').toLowerCase();
   if (feeType === 'reservation') {
     return res.json({
       fee_id: "FEE-RESERVE",
@@ -132,12 +132,21 @@ app.get('/payments/fees', (req, res) => {
       terms: "Holding deposit to reserve property for 7 days pending contract review."
     });
   }
+  if (feeType === 'commercial' || feeType === 'luxury') {
+    return res.json({
+      fee_id: "FEE-COMMERCIAL",
+      amount_kobo: 1000000, // ₦10,000
+      amount_ngn: 10000,
+      currency: "NGN",
+      terms: "Inspection logistics fee for commercial properties and luxury diplomatic mansions (covers facility clearance and private security escort)."
+    });
+  }
   return res.json({
     fee_id: "FEE-INSPECT",
     amount_kobo: 500000, // ₦5,000
     amount_ngn: 5000,
     currency: "NGN",
-    terms: "Non-refundable inspection logistics fee for private viewing."
+    terms: "Non-refundable inspection logistics fee for standard residential viewing."
   });
 });
 
@@ -145,7 +154,9 @@ app.get('/payments/fees', (req, res) => {
 app.post('/payments/paystack/initialize', async (req, res) => {
   const { lead_id, booking_id, fee_id, idempotency_key } = req.body;
   const isReserve = fee_id === 'FEE-RESERVE';
-  const amount_kobo = isReserve ? 50000000 : 500000;
+  const isCommercial = fee_id === 'FEE-COMMERCIAL';
+  const amount_kobo = isReserve ? 50000000 : (isCommercial ? 1000000 : 500000);
+  const feeName = isReserve ? 'Reservation Holding Deposit' : (isCommercial ? 'Commercial & Luxury Inspection Fee' : 'Inspection Logistics Fee');
   const reference = `REF-${Date.now()}`;
 
   // Find associated booking or lead details to enrich Paystack metadata
@@ -178,7 +189,7 @@ app.post('/payments/paystack/initialize', async (req, res) => {
             lead_id: lead_id || 'PROSPECT',
             booking_id: booking_id || (booking ? booking.booking_id : `BK-${reference.slice(-4)}`),
             fee_id: fee_id || 'FEE-INSPECT',
-            fee_name: isReserve ? 'Reservation Holding Deposit' : 'Inspection Logistics Fee',
+            fee_name: feeName,
             property_title: booking ? booking.property_title : undefined,
             property_location: booking ? (booking.property_location || booking.location) : undefined,
             slot_time: booking ? booking.slot_time : undefined,
@@ -201,7 +212,7 @@ app.post('/payments/paystack/initialize', async (req, res) => {
     lead_id,
     booking_id: booking_id || (booking ? booking.booking_id : undefined),
     fee_id: fee_id || "FEE-INSPECT",
-    fee_name: isReserve ? 'Reservation Holding Deposit' : 'Inspection Logistics Fee',
+    fee_name: feeName,
     property_title: booking ? booking.property_title : undefined,
     property_location: booking ? (booking.property_location || booking.location) : undefined,
     amount_kobo,
@@ -694,11 +705,16 @@ app.get('/', async (req, res) => {
                 ${p.title_document ? `<span style="background: #0f2e22; color: #6ee7b7; font-size: 12px; padding: 4px 10px; border-radius: 6px; border: 1px solid #059669;">📜 ${p.title_document}</span>` : ''}
               </div>
 
-              <!-- Full Detailed Description -->
-              <div style="background: #0b1120; border: 1px solid #1e293b; border-radius: 8px; padding: 14px; margin-bottom: 14px; font-size: 13px; line-height: 1.6; color: #cbd5e1;">
-                <b style="color: #38bdf8; display: block; margin-bottom: 6px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Architectural Overview & Description:</b>
-                ${p.description || 'Full architectural profile available on request.'}
-              </div>
+              <!-- Collapsible Detailed Description -->
+              <details style="margin-bottom: 14px; border: 1px solid #1e293b; border-radius: 8px; overflow: hidden; background: #0b1120;">
+                <summary style="padding: 10px 14px; font-size: 12px; font-weight: 700; color: #38bdf8; cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; background: #0f172a; transition: background 0.2s;">
+                  <span>🏛️ ARCHITECTURAL OVERVIEW & FULL DESCRIPTION</span>
+                  <span style="font-size: 11px; color: #94a3b8; font-weight: 600;">Click to Expand / Collapse ▾</span>
+                </summary>
+                <div style="padding: 14px; font-size: 13px; line-height: 1.6; color: #cbd5e1; border-top: 1px solid #1e293b; background: #080e1a;">
+                  ${p.description || 'Full architectural profile available on request.'}
+                </div>
+              </details>
 
               <!-- Key Highlights & Landmarks -->
               <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-bottom: 14px; font-size: 12px;">

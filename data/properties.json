@@ -270,5 +270,73 @@
       "specialization": "Abuja Prime District"
     },
     "available": true
+  },
+  {
+    "property_id": "VI-COM-101",
+    "title": "500 sqm Grade-A Open-Plan Commercial Office Floor",
+    "location": "Adeola Odeku Street, Victoria Island, Lagos",
+    "neighborhood": "Victoria Island",
+    "bedrooms": 0,
+    "bathrooms": 6,
+    "price_ngn": 45000000,
+    "price_formatted": "₦45,000,000 / year",
+    "transaction_type": "rent",
+    "property_type": "Commercial Office",
+    "land_size_sqm": "500 sqm open-plan usable floor area",
+    "furnishing": "Open Shell with raised access flooring, central AC ducts & acoustic ceiling tiles",
+    "title_document": "Federal C of O & Approved Commercial Development Permit",
+    "service_charge_formatted": "₦7,500,000 / annum (covers 24/7 dual generator diesel power, multi-lift maintenance, security & water)",
+    "description": "A prestigious 500 sqm entire floor plate in a newly commissioned 8-storey commercial glass tower located along the prime corporate strip of Adeola Odeku Street, Victoria Island. Ideal for multinational regional headquarters, fintech firms, consulting agencies, and legal practices. The space provides a column-free, open-plan architectural layout allowing flexible modular partition into executive corner boardrooms, team workstations, and private offices. Fitted with raised access flooring for seamless IT/telecom cabling, double-glazed UV-filtering glass curtain walls offering panoramic cityscape views, pre-installed centralized multi-zone Daikin VRV air conditioning, and male/female executive washroom batteries. The building delivers uncompromised Grade-A corporate infrastructure: 24/7/365 uninterrupted electricity backed by synchronized Cummins generators, dual 10-passenger Otis high-speed elevators, biometric turnstile security, dedicated basement and surface parking with 8 assigned parking bays, FM200 automated fire suppression system, and professional on-site facility management.",
+    "highlights": [
+      "Prime Adeola Odeku high-profile corporate commercial address",
+      "500 sqm column-free layout with raised access flooring for IT infrastructure",
+      "24/7 uninterrupted power with synchronized Cummins diesel backup",
+      "8 dedicated secured parking bays (additional visitor parking available)",
+      "Dual Otis high-speed elevators and biometric turnstile reception access"
+    ],
+    "neighborhood_landmarks": "Immediate access to major commercial banking headquarters, 3 minutes to Eko Hotels & Suites, 5 minutes to Ahmadu Bello Way.",
+    "amenities": ["24/7 Power", "Passenger Elevators", "Biometric Access", "Dedicated Parking (8 bays)", "Fire Suppression", "CCTV", "Central VRV AC"],
+    "inspection_fee_ngn": 10000,
+    "available_slots": ["Monday 10:00 AM", "Wednesday 02:00 PM", "Friday 11:00 AM"],
+    "agent": {
+      "name": "Femi Adeleke",
+      "phone": "+234 805 111 2233",
+      "specialization": "VI Commercial & Luxury"
+    },
+    "available": true
+  },
+  {
+    "property_id": "LK-COM-202",
+    "title": "Prime Road-Facing Commercial Showroom & Plaza Unit",
+    "location": "Lekki-Epe Expressway (Near Agungi Junction), Lekki, Lagos",
+    "neighborhood": "Lekki",
+    "bedrooms": 0,
+    "bathrooms": 4,
+    "price_ngn": 25000000,
+    "price_formatted": "₦25,000,000 / year",
+    "transaction_type": "rent",
+    "property_type": "Commercial Showroom",
+    "land_size_sqm": "320 sqm ground floor showroom + 50 sqm mezzanine office",
+    "furnishing": "Fully glazed front facade, polished vitrified showroom tiles & industrial lighting",
+    "title_document": "Lagos State Governor's Consent & Commercial Allocation",
+    "service_charge_formatted": "₦3,200,000 / annum (includes estate security, generator power during business hours & waste management)",
+    "description": "An exceptional, high-visibility commercial showroom unit enjoying direct frontage and massive vehicular exposure on the prestigious Lekki-Epe Expressway near Agungi. Perfectly suited for automobile dealerships, luxury furniture brands, electronics retail superstores, or flagship bank branches. The property features a sweeping 18-meter frameless tempered glass display facade that guarantees maximum advertising visibility to over 80,000 daily commuters. The ground floor spans 320 square meters of expansive open showroom space with reinforced load-bearing floor slabs and 4.2-meter high ceilings, connected via a floating steel staircase to a 50 sqm mezzanine executive administrative office. Includes dedicated rear loading and dispatch bay, separate client and staff rest facilities, pre-installed industrial cassette air conditioning, dedicated transformer, backup soundproof generator operating throughout standard business hours (8:00 AM - 7:00 PM), and private customer forecourt parking for up to 12 vehicles.",
+    "highlights": [
+      "18-meter wide direct Lekki-Epe Expressway glass showroom frontage",
+      "High vehicular exposure with massive branding and signage rights",
+      "320 sqm showroom floor with reinforced slabs + 50 sqm mezzanine office",
+      "Dedicated front forecourt parking for 12 customer vehicles",
+      "Rear loading bay with direct vehicular delivery access"
+    ],
+    "neighborhood_landmarks": "Direct expressway frontage near Agungi Junction, 5 minutes to Chevron Drive, 8 minutes to Lekki Phase 1.",
+    "amenities": ["Direct Expressway Frontage", "Customer Parking (12 cars)", "Loading Bay", "Generator Backup", "CCTV", "High Ceiling", "Signage Rights"],
+    "inspection_fee_ngn": 10000,
+    "available_slots": ["Tuesday 11:00 AM", "Thursday 03:00 PM", "Saturday 10:30 AM"],
+    "agent": {
+      "name": "Chioma Eze",
+      "phone": "+234 803 987 6543",
+      "specialization": "Lekki Commercial & Residential"
+    },
+    "available": true
   }
 ]

@@ -220,7 +220,7 @@
             "name": "fee_type",
             "in": "query",
             "required": true,
-            "schema": { "type": "string", "enum": ["inspection", "reservation"] }
+            "schema": { "type": "string", "enum": ["inspection", "commercial", "reservation"] }
           }
         ],
         "responses": {

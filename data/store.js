@@ -295,16 +295,20 @@ module.exports = {
   },
 
   // Handoffs
-  createHandoff: async (lead_id, reason, summary) => {
+  createHandoff: async (lead_id, reason, summary, extra = {}) => {
     const db = getFirestore();
     const handoff_id = `HD-${Math.floor(100 + Math.random() * 900)}`;
     const handoff = {
       handoff_id,
       lead_id,
+      property_id: extra.property_id || null,
+      contact_info: extra.contact_info || null,
+      urgency: extra.urgency || "standard",
       reason,
       summary,
       status: "escalated_to_human",
-      assigned_officer: "Senior Closing & Legal Officer",
+      assigned_officer: extra.assigned_officer || "Senior Closing & Legal Officer",
+      confirmation_message: `Your escalation has been logged under ticket #${handoff_id}. Our Senior Closing & Legal Officer has been notified and will reach out shortly.`,
       created_at: new Date().toISOString()
     };
 

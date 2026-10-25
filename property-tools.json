@@ -326,7 +326,10 @@
                 "properties": {
                   "lead_id": { "type": "string" },
                   "reason": { "type": "string" },
-                  "summary": { "type": "string" }
+                  "summary": { "type": "string" },
+                  "property_id": { "type": "string", "description": "Optional ID of the property involved in the escalation" },
+                  "contact_info": { "type": "string", "description": "Optional phone or email for the officer to contact the prospect" },
+                  "urgency": { "type": "string", "enum": ["standard", "high", "critical"], "description": "Urgency level of the escalation" }
                 },
                 "required": ["lead_id", "reason", "summary"]
               }
@@ -342,7 +345,10 @@
                   "type": "object",
                   "properties": {
                     "handoff_id": { "type": "string" },
-                    "status": { "type": "string" }
+                    "status": { "type": "string" },
+                    "assigned_officer": { "type": "string" },
+                    "confirmation_message": { "type": "string" },
+                    "created_at": { "type": "string" }
                   }
                 }
               }

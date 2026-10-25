@@ -381,13 +381,14 @@ app.get('/payments/paystack/status', async (req, res) => {
 
 // 9. Create Human Handoff & Save Record
 app.post('/handoffs/create', async (req, res) => {
-  const { lead_id, reason, summary } = req.body;
-  const handoff = await store.createHandoff(lead_id, reason, summary);
+  const { lead_id, reason, summary, property_id, contact_info, urgency } = req.body;
+  const handoff = await store.createHandoff(lead_id, reason, summary, { property_id, contact_info, urgency });
   console.log(`\x1b[33m[HUMAN HANDOFF]\x1b[0m ${handoff.handoff_id} for ${lead_id}: ${reason}`);
   res.json({
     handoff_id: handoff.handoff_id,
     status: handoff.status,
     assigned_officer: handoff.assigned_officer,
+    confirmation_message: handoff.confirmation_message,
     created_at: handoff.created_at
   });
 });
@@ -739,9 +740,12 @@ app.get('/', async (req, res) => {
                   <td>
                     <b style="color: #f87171;">${h.handoff_id}</b>
                     <div style="color: #64748b; font-size: 11px; margin-top: 2px;">${dateStr}</div>
+                    ${h.urgency && h.urgency !== 'standard' ? `<span style="background: #ef4444; color: white; font-size: 9px; padding: 1px 6px; border-radius: 4px; font-weight: 700; text-transform: uppercase;">${h.urgency}</span>` : ''}
                   </td>
                   <td>
                     <b style="color: #f1f5f9;">${h.lead_id}</b>
+                    ${h.property_id ? `<div style="color: #94a3b8; font-size: 11px;">Property: ${h.property_id}</div>` : ''}
+                    ${h.contact_info ? `<div style="color: #38bdf8; font-size: 11px;">${h.contact_info}</div>` : ''}
                   </td>
                   <td>
                     <span style="color: #fca5a5; font-weight: 600;">${h.reason}</span>

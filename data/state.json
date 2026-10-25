@@ -1,35 +1,20 @@
 {
   "leads": {},
-  "bookings": {
-    "BK-462": {
-      "booking_id": "BK-462",
-      "lead_id": "LEAD-101",
+  "bookings": {},
+  "payments": {},
+  "handoffs": {
+    "HD-581": {
+      "handoff_id": "HD-581",
+      "lead_id": "LEAD-TEST",
       "property_id": "IK-402",
-      "property_title": "4-Bedroom Luxury Waterfront Terrace with BQ",
-      "property_location": "Parkview Estate, Ikoyi, Lagos",
-      "slot_time": "Saturday 11:00 AM",
-      "status": "pending_payment",
-      "assigned_agent": {
-        "name": "Tunde Balogun",
-        "phone": "+234 802 345 6789",
-        "specialization": "Ikoyi Luxury Sales"
-      },
-      "created_at": "2026-10-25T11:39:12.443Z"
+      "contact_info": "+2348012345678",
+      "urgency": "high",
+      "reason": "Legal Deed Search",
+      "summary": "Client wants to examine original C of O at HQ",
+      "status": "escalated_to_human",
+      "assigned_officer": "Senior Closing & Legal Officer",
+      "confirmation_message": "Your escalation has been logged under ticket #HD-581. Our Senior Closing & Legal Officer has been notified and will reach out shortly.",
+      "created_at": "2026-10-25T14:07:08.021Z"
     }
-  },
-  "payments": {
-    "REF-1792928352460": {
-      "payment_id": "REF-1792928352460",
-      "lead_id": "LEAD-101",
-      "booking_id": "BK-TEST",
-      "fee_id": "FEE-INSPECT",
-      "amount_kobo": 500000,
-      "amount_ngn": 5000,
-      "reference": "REF-1792928352460",
-      "authorization_url": "https://checkout.paystack.com/mock-pay-REF-1792928352460",
-      "status": "pending",
-      "created_at": "2026-10-25T11:39:12.460Z"
-    }
-  },
-  "handoffs": {}
+  }
 }

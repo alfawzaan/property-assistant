@@ -82,14 +82,16 @@
     "/properties/search": {
       "post": {
         "operationId": "search_properties",
-        "summary": "Search approved property inventory for sale or rent",
+        "summary": "Search approved property inventory for sale or rent by ID, keywords, or filters",
         "requestBody": {
-          "required": true,
+          "required": false,
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
                 "properties": {
+                  "property_id": { "type": "string", "description": "Specific property reference ID e.g. LK-410, IK-402, VI-COM-101" },
+                  "query": { "type": "string", "description": "Keyword search query e.g. 4 bedroom, duplex, chevron, lekki" },
                   "location": { "type": "string" },
                   "bedrooms": { "type": "integer" },
                   "max_price_ngn": { "type": "number" },

@@ -52,8 +52,32 @@ app.post('/leads/update', async (req, res) => {
 
 // 3. Search Real Properties Catalog
 app.post('/properties/search', (req, res) => {
-  const { location, bedrooms, max_price_ngn, transaction_type } = req.body || {};
+  const { property_id, query, location, bedrooms, max_price_ngn, transaction_type } = req.body || {};
   let properties = store.getProperties();
+
+  // 1. Direct property_id lookup
+  if (property_id) {
+    const idLower = property_id.toLowerCase().trim();
+    const matched = properties.filter(p => p.property_id.toLowerCase() === idLower);
+    if (matched.length > 0) {
+      return res.json(matched);
+    }
+  }
+
+  // 2. Keyword query search across ID, title, location, neighborhood, property_type
+  if (query) {
+    const q = query.toLowerCase().trim();
+    const matched = properties.filter(p => 
+      p.property_id.toLowerCase().includes(q) ||
+      p.title.toLowerCase().includes(q) ||
+      p.location.toLowerCase().includes(q) ||
+      p.neighborhood.toLowerCase().includes(q) ||
+      p.property_type.toLowerCase().includes(q)
+    );
+    if (matched.length > 0) {
+      properties = matched;
+    }
+  }
 
   if (transaction_type) {
     properties = properties.filter(p => p.transaction_type.toLowerCase() === transaction_type.toLowerCase());

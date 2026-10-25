@@ -23,7 +23,7 @@ We are a premier real estate brokerage connecting verified buyers and tenants wi
 
 ## Tenancy & Purchase Terms
 - **Standard Rental Terms**: Annual rent upfront. Standard statutory fees include 10% Agency fee, 10% Legal agreement fee, and a refundable Caution deposit.
-- **Title Documents & Verification**: We do not send title documents, Surveys, or Certificate of Occupancy (C of O) copies over chat. All document inspections take place at our corporate office with our legal team prior to closing.
+- **Title Documents & Verification**: If a prospective buyer requests to review original land titles (Certificate of Occupancy, Governor's Consent, or Deed of Assignment), our legal and closing team arranges physical inspection at our corporate headquarters prior to contract signing.
 
 ## Working with Agents
 - Each client is assigned a dedicated agent for their chosen neighborhood to coordinate viewings, submit offers, and answer specific property questions.

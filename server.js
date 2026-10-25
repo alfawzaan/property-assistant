@@ -21,8 +21,9 @@ app.use((req, res, next) => {
 });
 
 // 1. Get or Create Lead
-app.post('/leads/get-or-create', async (req, res) => {
-  const { channel_id, sender_id } = req.body;
+app.post(['/leads/get-or-create', '/leads/create'], async (req, res) => {
+  const channel_id = req.body.channel_id || req.body.channel || 'whatsapp';
+  const sender_id = req.body.sender_id || req.body.contact_info || req.body.phone || req.body.email || req.body.user_id;
   const lead = await store.getOrCreateLead(channel_id, sender_id);
   res.json({
     lead_id: lead.lead_id,
@@ -34,14 +35,20 @@ app.post('/leads/get-or-create', async (req, res) => {
 
 // 2. Update Lead Requirements & Offers
 app.post('/leads/update', async (req, res) => {
-  const { lead_id, budget_max_ngn, bedrooms, location, transaction_type, offer_details } = req.body;
-  const updated = await store.updateLead(lead_id, {
-    budget_max_ngn,
-    bedrooms: bedrooms ? parseInt(bedrooms) : undefined,
-    location,
-    transaction_type,
-    offer_details
-  });
+  const body = req.body || {};
+  const lead_id = body.lead_id;
+  const fields = body.fields || body;
+
+  const updateData = {
+    budget_max_ngn: fields.budget_max_ngn || fields.budget || fields.max_price_ngn || undefined,
+    bedrooms: fields.bedrooms ? parseInt(fields.bedrooms) : undefined,
+    location: fields.location || fields.preferred_location || fields.area || undefined,
+    transaction_type: fields.transaction_type || fields.intent || undefined,
+    offer_details: fields.offer_details || fields.notes || fields.offer || undefined
+  };
+  Object.keys(updateData).forEach(k => updateData[k] === undefined && delete updateData[k]);
+
+  const updated = await store.updateLead(lead_id, updateData);
   console.log(`\x1b[32m[LEAD SAVED]\x1b[0m ${lead_id}:`, updated);
   res.json({
     success: true,
@@ -128,7 +135,7 @@ app.post('/bookings/check-slot', (req, res) => {
 });
 
 // 5. Book Viewing & Save to State
-app.post('/bookings/book', async (req, res) => {
+app.post(['/bookings/book', '/bookings/create'], async (req, res) => {
   const { lead_id, property_id, slot_time } = req.body;
   const booking = await store.createBooking(lead_id, property_id, slot_time);
   

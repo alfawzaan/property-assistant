@@ -60,7 +60,13 @@ module.exports = {
   // Leads
   getOrCreateLead: async (channel_id, sender_id) => {
     const db = getFirestore();
-    const lead_id = `LEAD-${(sender_id || 'PROSPECT').slice(-4).toUpperCase()}`;
+    let lead_id;
+    if (sender_id && sender_id !== 'PROSPECT' && sender_id !== 'user' && sender_id.length >= 4) {
+      const clean = sender_id.replace(/[^a-zA-Z0-9]/g, '');
+      lead_id = `LEAD-${(clean.slice(-4) || 'USER').toUpperCase()}`;
+    } else {
+      lead_id = `LEAD-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+    }
 
     if (db) {
       try {
@@ -73,14 +79,15 @@ module.exports = {
         }
         const newLead = {
           lead_id,
-          channel_id,
-          sender_id,
+          channel_id: channel_id || 'whatsapp',
+          sender_id: sender_id || '+2348000000000',
+          customer_email: `${lead_id.toLowerCase()}@propertypro.ng`,
           budget_max_ngn: null,
           bedrooms: null,
           location: null,
           transaction_type: null,
           offer_details: null,
-          owner_agent_id: "AGENT-007",
+          owner_agent_id: "Chioma Eze",
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         };
@@ -96,14 +103,15 @@ module.exports = {
     if (!existing) {
       existing = {
         lead_id,
-        channel_id,
-        sender_id,
+        channel_id: channel_id || 'whatsapp',
+        sender_id: sender_id || '+2348000000000',
+        customer_email: `${lead_id.toLowerCase()}@propertypro.ng`,
         budget_max_ngn: null,
         bedrooms: null,
         location: null,
         transaction_type: null,
         offer_details: null,
-        owner_agent_id: "AGENT-007",
+        owner_agent_id: "Chioma Eze",
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
@@ -120,10 +128,12 @@ module.exports = {
     if (db) {
       try {
         const docRef = db.collection('leads').doc(lead_id);
-        await docRef.set({ ...fields, lead_id, updated_at }, { merge: true });
         const doc = await docRef.get();
-        state.leads[lead_id] = doc.data();
-        return doc.data();
+        const existingData = doc.exists ? doc.data() : { lead_id, created_at: updated_at };
+        const merged = { ...existingData, ...fields, lead_id, updated_at };
+        await docRef.set(merged, { merge: true });
+        state.leads[lead_id] = merged;
+        return merged;
       } catch (err) {
         console.error('Firestore updateLead error:', err.message);
       }
@@ -262,11 +272,25 @@ module.exports = {
         await docRef.set(paymentData, { merge: true });
 
         if (paymentData.booking_id) {
-          await db.collection('bookings').doc(paymentData.booking_id).set({
+          const bookingDocRef = db.collection('bookings').doc(paymentData.booking_id);
+          const bookingDoc = await bookingDocRef.get();
+          const existingBooking = bookingDoc.exists ? bookingDoc.data() : {};
+          const updatedBooking = {
+            ...existingBooking,
+            booking_id: paymentData.booking_id,
+            lead_id: existingBooking.lead_id || paymentData.lead_id || 'PROSPECT',
+            property_title: existingBooking.property_title || paymentData.property_title || 'Private Viewing Inspection',
+            property_location: existingBooking.property_location || paymentData.property_location || 'Lekki / Ikoyi',
+            slot_time: existingBooking.slot_time || 'Scheduled Viewing Slot',
+            amount_ngn: existingBooking.amount_ngn || paymentData.amount_ngn || 5000,
+            assigned_agent: existingBooking.assigned_agent || { name: 'Chioma Eze', phone: '+234 803 987 6543' },
             status: "confirmed",
             receipt_id: receipt_id,
+            created_at: existingBooking.created_at || paymentData.created_at || verified_at,
             confirmed_at: verified_at
-          }, { merge: true });
+          };
+          await bookingDocRef.set(updatedBooking, { merge: true });
+          state.bookings[paymentData.booking_id] = updatedBooking;
         }
 
         state.payments[ref] = paymentData;
@@ -335,12 +359,22 @@ module.exports = {
     if (db) {
       try {
         const [leadsSnap, bookingsSnap, paymentsSnap, handoffsSnap, propertiesSnap] = await Promise.all([
-          db.collection('leads').orderBy('created_at', 'desc').limit(50).get(),
-          db.collection('bookings').orderBy('created_at', 'desc').limit(50).get(),
-          db.collection('payments').orderBy('created_at', 'desc').limit(50).get(),
-          db.collection('handoffs').orderBy('created_at', 'desc').limit(50).get(),
+          db.collection('leads').get(),
+          db.collection('bookings').get(),
+          db.collection('payments').get(),
+          db.collection('handoffs').get(),
           db.collection('properties').get()
         ]);
+
+        const sortByDate = (docs) => docs.map(d => {
+          const data = d.data();
+          return { id: d.id, ...data };
+        }).sort((a, b) => new Date(b.created_at || b.updated_at || b.confirmed_at || 0) - new Date(a.created_at || a.updated_at || a.confirmed_at || 0));
+
+        const leads = sortByDate(leadsSnap.docs);
+        const bookings = sortByDate(bookingsSnap.docs);
+        const payments = sortByDate(paymentsSnap.docs);
+        const handoffs = sortByDate(handoffsSnap.docs);
 
         if (!propertiesSnap.empty) {
           state.properties = propertiesSnap.docs.map(d => d.data());
@@ -348,10 +382,10 @@ module.exports = {
 
         return {
           total_properties: state.properties.length,
-          leads: leadsSnap.docs.map(d => d.data()),
-          bookings: bookingsSnap.docs.map(d => d.data()),
-          payments: paymentsSnap.docs.map(d => d.data()),
-          handoffs: handoffsSnap.docs.map(d => d.data()),
+          leads,
+          bookings,
+          payments,
+          handoffs,
           properties: state.properties
         };
       } catch (err) {

@@ -542,7 +542,7 @@ app.get('/', async (req, res) => {
               stateData.bookings.map(b => {
                 const dateStr = b.created_at ? new Date(b.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Recent';
                 const agentName = b.assigned_agent ? (typeof b.assigned_agent === 'string' ? b.assigned_agent : (b.assigned_agent.name || 'Tunde Bakare')) : 'Tunde Bakare';
-                const agentPhone = b.assigned_agent && b.assigned_agent.phone ? b.assigned_agent.phone : '+234 803 123 4567';
+                const agentPhone = b.assigned_agent && b.assigned_agent.phone ? b.assigned_agent.phone : '+234 800 000 0000';
                 const isConfirmed = b.status === 'confirmed';
                 return `
                 <tr>
@@ -782,7 +782,7 @@ app.get('/', async (req, res) => {
                   Dedicated Sales Agent: <b style="color: #f8fafc;">${p.agent ? p.agent.name : 'Tunde Balogun'}</b> (${p.agent ? p.agent.specialization : 'Prime Sales'})
                 </div>
                 <div>
-                  Direct Line: <a href="tel:${p.agent ? p.agent.phone : ''}" style="color: #38bdf8; text-decoration: none; font-weight: 600;">${p.agent ? p.agent.phone : '+234 802 345 6789'}</a>
+                  Direct Line: <a href="tel:${p.agent ? p.agent.phone : ''}" style="color: #38bdf8; text-decoration: none; font-weight: 600;">${p.agent ? p.agent.phone : '+234 800 000 0000'}</a>
                 </div>
               </div>
             </div>

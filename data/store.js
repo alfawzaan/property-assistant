@@ -282,7 +282,7 @@ module.exports = {
             property_location: existingBooking.property_location || paymentData.property_location || 'Lekki / Ikoyi',
             slot_time: existingBooking.slot_time || 'Scheduled Viewing Slot',
             amount_ngn: existingBooking.amount_ngn || paymentData.amount_ngn || 5000,
-            assigned_agent: existingBooking.assigned_agent || { name: 'Chioma Eze', phone: '+234 803 987 6543' },
+            assigned_agent: existingBooking.assigned_agent || { name: 'Chioma Eze', phone: '+234 800 000 0003' },
             status: "confirmed",
             receipt_id: receipt_id,
             created_at: existingBooking.created_at || paymentData.created_at || verified_at,

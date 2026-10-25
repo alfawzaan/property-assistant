@@ -1,0 +1,332 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Property Assistant API Tools",
+    "description": "REST API tool connector for Chord Teammates to manage property discovery, bookings, and Paystack transactions.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://api.youragency.com/v1",
+      "description": "Production or mock webhook backend"
+    }
+  ],
+  "paths": {
+    "/leads/get-or-create": {
+      "post": {
+        "operationId": "get_or_create_lead",
+        "summary": "Retrieve or create a customer lead record from channel metadata",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "channel_id": { "type": "string" },
+                  "sender_id": { "type": "string" }
+                },
+                "required": ["channel_id", "sender_id"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Lead retrieved or registered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "lead_id": { "type": "string" },
+                    "owner_agent_id": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/leads/update": {
+      "post": {
+        "operationId": "update_lead",
+        "summary": "Save buyer or tenant requirements (area, budget, bedrooms, buy/rent, offers)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "lead_id": { "type": "string" },
+                  "budget_max_ngn": { "type": "number" },
+                  "bedrooms": { "type": "integer" },
+                  "location": { "type": "string" },
+                  "transaction_type": { "type": "string", "enum": ["buy", "rent"] },
+                  "offer_details": { "type": "string" }
+                },
+                "required": ["lead_id"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Lead updated successfully"
+          }
+        }
+      }
+    },
+    "/properties/search": {
+      "post": {
+        "operationId": "search_properties",
+        "summary": "Search approved property inventory for sale or rent",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "location": { "type": "string" },
+                  "bedrooms": { "type": "integer" },
+                  "max_price_ngn": { "type": "number" },
+                  "transaction_type": { "type": "string", "enum": ["buy", "rent"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Matching property listings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "property_id": { "type": "string" },
+                      "title": { "type": "string" },
+                      "location": { "type": "string" },
+                      "price_ngn": { "type": "number" },
+                      "transaction_type": { "type": "string" },
+                      "available": { "type": "boolean" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bookings/check-slot": {
+      "post": {
+        "operationId": "check_viewing_slot",
+        "summary": "Check agent and listing availability for an inspection visit",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "property_id": { "type": "string" },
+                  "preferred_date": { "type": "string" }
+                },
+                "required": ["property_id", "preferred_date"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Available time slots"
+          }
+        }
+      }
+    },
+    "/bookings/book": {
+      "post": {
+        "operationId": "book_viewing",
+        "summary": "Confirm and book an inspection viewing appointment",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "lead_id": { "type": "string" },
+                  "property_id": { "type": "string" },
+                  "slot_time": { "type": "string" }
+                },
+                "required": ["lead_id", "property_id", "slot_time"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Booking created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "booking_id": { "type": "string" },
+                    "status": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/payments/fees": {
+      "get": {
+        "operationId": "get_payable_fee",
+        "summary": "Get approved fee amount and terms for an inspection or reservation deposit",
+        "parameters": [
+          {
+            "name": "fee_type",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "enum": ["inspection", "reservation"] }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Approved fee details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "fee_id": { "type": "string" },
+                    "amount_kobo": { "type": "integer" },
+                    "currency": { "type": "string" },
+                    "terms": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/payments/paystack/initialize": {
+      "post": {
+        "operationId": "initialize_paystack_payment",
+        "summary": "Initialize a hosted Paystack checkout session for an inspection or reservation",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "lead_id": { "type": "string" },
+                  "fee_id": { "type": "string" },
+                  "idempotency_key": { "type": "string" }
+                },
+                "required": ["lead_id", "fee_id", "idempotency_key"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Paystack checkout initialized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payment_id": { "type": "string" },
+                    "authorization_url": { "type": "string" },
+                    "reference": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/payments/paystack/status": {
+      "get": {
+        "operationId": "get_payment_status",
+        "summary": "Verify real-time Paystack transaction status with backend verification",
+        "parameters": [
+          {
+            "name": "payment_id",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Verified transaction status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "verified_status": { "type": "string", "enum": ["verified_success", "pending", "failed"] },
+                    "reference": { "type": "string" },
+                    "receipt_id": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/handoffs/create": {
+      "post": {
+        "operationId": "create_handoff",
+        "summary": "Transfer customer conversation to a human real estate agent or legal officer",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "lead_id": { "type": "string" },
+                  "reason": { "type": "string" },
+                  "summary": { "type": "string" }
+                },
+                "required": ["lead_id", "reason", "summary"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Handoff registered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "handoff_id": { "type": "string" },
+                    "status": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

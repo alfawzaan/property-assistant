@@ -417,95 +417,15 @@ app.post('/handoffs/create', async (req, res) => {
   });
 });
 
-// Helper to fetch live transactions directly from Paystack API and merge with state
+// Helper to load application state directly from Cloud Firestore
 async function getUnifiedState() {
   const localState = await store.getAllState();
-  let payments = [...localState.payments];
-  let bookings = [...localState.bookings];
-
-  if (PAYSTACK_SECRET_KEY) {
-    try {
-      const response = await fetch('https://api.paystack.co/transaction?perPage=50', {
-        headers: {
-          'Authorization': `Bearer ${PAYSTACK_SECRET_KEY}`
-        }
-      });
-      const data = await response.json();
-      if (data.status && Array.isArray(data.data)) {
-        // Only include transactions that belong to this Property Assistant app (starts with REF- or has fee_id)
-        const propertyAssistantTxs = data.data.filter(tx => 
-          (tx.reference && tx.reference.startsWith('REF-')) || 
-          (tx.metadata && (tx.metadata.fee_id || tx.metadata.lead_id || tx.metadata.booking_id))
-        );
-
-        const paystackPayments = propertyAssistantTxs.map(tx => {
-          const meta = tx.metadata || {};
-          const isSuccess = tx.status === 'success';
-          const feeName = meta.fee_name || (meta.fee_id === 'FEE-RESERVE' ? 'Reservation Deposit' : 'Inspection Logistics Fee');
-          const channelName = tx.channel ? tx.channel.toUpperCase() : 'CARD';
-          const customerEmail = tx.customer ? tx.customer.email : (meta.lead_id ? `${meta.lead_id.toLowerCase()}@propertypro.ng` : 'N/A');
-
-          // Sync booking if metadata exists and not yet recorded
-          if (meta.booking_id && !bookings.some(b => b.booking_id === meta.booking_id)) {
-            bookings.unshift({
-              booking_id: meta.booking_id,
-              lead_id: meta.lead_id || customerEmail,
-              property_title: meta.property_title || (meta.fee_id === 'FEE-RESERVE' ? 'Property Reservation' : 'Private Inspection Viewing'),
-              property_location: meta.property_location || 'Lekki / Ikoyi',
-              slot_time: meta.slot_time || 'Scheduled Viewing Slot',
-              status: isSuccess ? 'confirmed' : 'pending_payment',
-              assigned_agent: { 
-                name: meta.agent_name || 'Tunde Bakare', 
-                phone: '+234 803 123 4567' 
-              },
-              receipt_id: isSuccess ? `RC-${tx.reference}` : null,
-              created_at: tx.created_at,
-              amount_ngn: tx.amount / 100
-            });
-          } else if (meta.booking_id && isSuccess) {
-            const existingB = bookings.find(b => b.booking_id === meta.booking_id);
-            if (existingB) {
-              existingB.status = 'confirmed';
-              existingB.receipt_id = `RC-${tx.reference}`;
-            }
-          }
-
-          return {
-            payment_id: tx.reference,
-            reference: tx.reference,
-            amount_ngn: tx.amount / 100,
-            fee_name: feeName,
-            status: isSuccess ? 'verified_success' : tx.status,
-            receipt_id: isSuccess ? `RC-${tx.reference}` : 'Pending',
-            channel: channelName,
-            gateway_response: tx.gateway_response || (isSuccess ? 'Successful' : 'Pending'),
-            created_at: tx.created_at,
-            paid_at: tx.paid_at || tx.created_at,
-            customer_email: customerEmail,
-            lead_id: meta.lead_id || 'N/A',
-            booking_id: meta.booking_id || 'N/A',
-            property_title: meta.property_title || 'N/A',
-            property_location: meta.property_location || 'N/A'
-          };
-        });
-
-        const seen = new Set();
-        payments = [...paystackPayments, ...payments].filter(p => {
-          if (seen.has(p.reference)) return false;
-          seen.add(p.reference);
-          return true;
-        });
-      }
-    } catch (err) {
-      console.error('Error fetching live transactions from Paystack:', err.message);
-    }
-  }
-
   return {
     total_properties: localState.total_properties,
+    properties: localState.properties,
     leads: localState.leads,
-    bookings,
-    payments,
+    bookings: localState.bookings,
+    payments: localState.payments,
     handoffs: localState.handoffs
   };
 }

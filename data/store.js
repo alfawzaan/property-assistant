@@ -211,8 +211,11 @@ module.exports = {
     const db = getFirestore();
     const payment = {
       ...paymentData,
-      status: "pending",
-      created_at: new Date().toISOString()
+      customer_email: paymentData.customer_email || `${(paymentData.lead_id || 'customer').replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}@propertypro.ng`,
+      channel: paymentData.channel || 'CARD',
+      gateway_response: paymentData.gateway_response || 'Pending',
+      status: paymentData.status || "pending",
+      created_at: paymentData.created_at || new Date().toISOString()
     };
 
     if (db) {
@@ -254,6 +257,7 @@ module.exports = {
         paymentData.status = "verified_success";
         paymentData.receipt_id = receipt_id;
         paymentData.verified_at = verified_at;
+        paymentData.gateway_response = "Successful";
         
         await docRef.set(paymentData, { merge: true });
 

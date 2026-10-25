@@ -292,7 +292,8 @@ app.get('/payment/callback', async (req, res) => {
       payment = await store.getPaymentById(ref);
     }
 
-    const receiptId = payment && payment.receipt_id ? payment.receipt_id : `RC-${ref || 'GEN'}`;
+    const cleanRef = (ref || 'GEN').replace(/^(REF-|RC-)/, '');
+    const receiptId = payment && payment.receipt_id ? payment.receipt_id : `RC-${cleanRef}`;
     const amountNgn = payment && payment.amount_ngn ? payment.amount_ngn : 5000;
     const amountStr = amountNgn.toLocaleString();
 
@@ -385,10 +386,11 @@ app.get('/payments/paystack/status', async (req, res) => {
         const data = await response.json();
         if (data.status && data.data && data.data.status === 'success') {
           const verified = await store.verifyPayment(ref, ref);
+          const cleanRef = (ref || '').replace(/^(REF-|RC-)/, '');
           return res.json({
             verified_status: "verified_success",
             reference: ref,
-            receipt_id: verified ? verified.receipt_id : `RC-${ref}`,
+            receipt_id: verified ? verified.receipt_id : `RC-${cleanRef}`,
             payment: verified
           });
         }
@@ -399,10 +401,11 @@ app.get('/payments/paystack/status', async (req, res) => {
 
     // Default verification for flow
     const verified = await store.verifyPayment(ref, ref);
+    const cleanRef = (ref || '').replace(/^(REF-|RC-)/, '');
     res.json({
       verified_status: "verified_success",
       reference: ref,
-      receipt_id: verified ? verified.receipt_id : `RC-${ref}`,
+      receipt_id: verified ? verified.receipt_id : `RC-${cleanRef}`,
       payment: verified
     });
   } catch (err) {

@@ -254,7 +254,8 @@ module.exports = {
     const db = getFirestore();
     const ref = payment_id || reference;
     const verified_at = new Date().toISOString();
-    const receipt_id = `RC-${ref}`;
+    const cleanRef = (ref || '').replace(/^(REF-|RC-)/, '');
+    const receipt_id = `RC-${cleanRef}`;
 
     if (db) {
       try {

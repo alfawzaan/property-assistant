@@ -1,72 +1,40 @@
-# Property Assistant OS
+# Property Assistant
 
-A backend and visual revenue dashboard for an AI property assistant operating in the Nigerian real estate market (Lagos & Abuja). It handles property search, scheduling physical viewings, collecting logistics fees via Paystack, and escalating complex inquiries to human agents — backed by Google Cloud Firestore.
+Backend service and dashboard for the Property Assistant Chord teammate. It handles inventory lookups, inspection bookings, Paystack payments, and escalations, storing everything in Firebase Firestore.
 
----
+## Quick Start
 
-## What’s Inside
+### 1. Firebase Setup
+1. Head over to the [Firebase Console](https://console.firebase.google.com/) and create a project (or use an existing one).
+2. In the left sidebar, go to **Build** > **Firestore Database** and click **Create database**.
+3. Open **Project Settings** (the gear icon at the top left) and go to the **Service accounts** tab.
+4. Click **Generate new private key** and download the JSON file.
+5. Rename the downloaded file to `serviceAccountKey.json` and move it into the root of this project. It is already added to `.gitignore`, so it won't be committed to Git.
 
-- **Live Revenue Dashboard (`/`)**: A clean real-time view of verified Paystack payments, viewing bookings, captured leads, and current inventory.
-- **REST Endpoints for AI Tools**: Plugs directly into Chord (or any LLM agent) using the schema in `property-tools.json`.
-- **Cloud Firestore Storage**: Persistent storage for properties, leads, inspection bookings, payments, and handoff tickets.
-- **Paystack Integration**: Generates checkout links and verifies inspection logistics fees (`₦5,000` residential, `₦10,000` commercial).
-
----
-
-## Getting Started Locally
-
-### 1. Install dependencies
-Make sure you have Node.js (v18+) installed, then run:
-
+### 2. Install & Run
 ```bash
 npm install
-```
-
-### 2. Set up Firebase & Environment Variables
-The app connects to Cloud Firestore using Firebase Admin SDK. You have two easy ways to set this up:
-
-- **Option A (Simplest for local dev):** Drop your Firebase service account key file directly in the project root as `serviceAccountKey.json` (this file is already in `.gitignore`).
-- **Option B (Environment variables):** Copy `.env.example` to `.env`:
-  ```bash
-  cp .env.example .env
-  ```
-  Fill in your `FIREBASE_SERVICE_ACCOUNT` JSON string (or the individual project ID, email, and private key).
-
-*Optional:* If you want real Paystack checkout links instead of mock links, add your test secret key:
-```env
-PAYSTACK_SECRET_KEY=sk_test_...
-PORT=3000
-```
-
-### 3. Start the server
-
-```bash
 npm start
 ```
+The server starts up at `http://localhost:3000`. Open that in your browser to view the live dashboard showing bookings, leads, payments, and property inventory.
 
-You should see:
-```text
-✔ Firebase Firestore connected via local serviceAccountKey.json
-Property Assistant OS running on port 3000
-Dashboard available at http://localhost:3000
+### 3. Optional: Real Paystack Keys
+By default, the server generates mock payment links for testing. If you want to test live or test-mode Paystack checkout pages, copy `.env.example` to `.env` and add your secret key:
+
+```bash
+cp .env.example .env
+```
+```env
+PAYSTACK_SECRET_KEY=sk_test_xxxx
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser to view the live dashboard.
-
----
-
-## Connecting to Chord / AI Agent
-
-1. **Tools Schema**: The file `property-tools.json` contains the full OpenAPI-style tool definitions (search, slot check, booking, payment generation, payment verification, and human handoff).
-2. **Behavior & Policy Rules**: See `SKILL.md` and `references/policies.md` for the agent's tone, fee disclosures, and escalation boundaries.
-
----
+## Connecting to Chord
+- **Tools**: Import `property-tools.json` into Chord to give the agent access to the backend routes.
+- **Agent Instructions**: See `SKILL.md` and `references/policies.md` for guidelines on tone, inspection fees, and human escalation handoffs.
 
 ## Deploying to Vercel
-
-The repository is pre-configured for Vercel:
-1. Push your code to GitHub and import the repo into Vercel.
-2. In the Vercel dashboard (**Settings → Environment Variables**), add:
-   - `FIREBASE_SERVICE_ACCOUNT`: The raw JSON string of your Firebase service account.
-   - `PAYSTACK_SECRET_KEY`: *(Optional)* Your Paystack Secret Key.
-3. Deploy! The serverless function in `api/index.js` routes all incoming requests to `server.js`.
+1. Push your code to GitHub and import the project into Vercel.
+2. Under **Project Settings** > **Environment Variables**, add:
+   - `FIREBASE_SERVICE_ACCOUNT`: Copy the entire contents of your `serviceAccountKey.json` and paste it here as a single value.
+   - `PAYSTACK_SECRET_KEY`: *(Optional)* Your Paystack secret key.
+3. Deploy. The file `api/index.js` routes all incoming requests to `server.js`.

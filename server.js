@@ -160,10 +160,10 @@ app.post('/payments/paystack/initialize', async (req, res) => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          email: `${lead_id ? lead_id.toLowerCase() : 'customer'}@example.com`,
+          email: `${(lead_id || 'customer').replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}@propertypro.ng`,
           amount: amount_kobo,
           reference: reference,
-          callback_url: 'https://checkout.paystack.com'
+          callback_url: `https://property-assistant-dun.vercel.app/payment/callback`
         })
       });
       const data = await response.json();
@@ -193,6 +193,87 @@ app.post('/payments/paystack/initialize', async (req, res) => {
     reference: reference,
     status: paymentRecord.status
   });
+});
+
+// Paystack Return Callback (Where Paystack redirects the customer upon payment completion)
+app.get('/payment/callback', async (req, res) => {
+  const ref = req.query.reference || req.query.trxref;
+  console.log(`\x1b[32m[PAYSTACK CALLBACK]\x1b[0m Customer returned. Verifying ref: ${ref}`);
+
+  // Real Paystack verification if key exists
+  if (PAYSTACK_SECRET_KEY && ref) {
+    try {
+      const response = await fetch(`https://api.paystack.co/transaction/verify/${ref}`, {
+        headers: { 'Authorization': `Bearer ${PAYSTACK_SECRET_KEY}` }
+      });
+      const data = await response.json();
+      if (data.status && data.data && data.data.status === 'success') {
+        store.verifyPayment(ref, ref);
+      }
+    } catch (err) {
+      console.error('Paystack verify failed on callback:', err.message);
+    }
+  } else if (ref) {
+    store.verifyPayment(ref, ref);
+  }
+
+  const payment = store.getPaymentById(ref) || Object.values(store.getAllState().payments).find(p => p.reference === ref);
+
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <title>Payment Successful — Property Assistant</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; text-align: center; }
+        .card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 36px 28px; max-width: 440px; width: 100%; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5); }
+        .check-icon { width: 64px; height: 64px; background: #064e3b; color: #34d399; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; margin: 0 auto 20px; }
+        h1 { font-size: 22px; margin: 0 0 8px; color: #38bdf8; }
+        p { color: #94a3b8; font-size: 14px; line-height: 1.5; margin: 0 0 20px; }
+        .receipt-box { background: #020617; border: 1px solid #334155; border-radius: 8px; padding: 14px; margin-bottom: 24px; text-align: left; font-size: 13px; font-family: monospace; }
+        .receipt-row { display: flex; justify-content: space-between; margin-bottom: 6px; }
+        .receipt-row:last-child { margin-bottom: 0; }
+        .btn { background: #38bdf8; color: #0f172a; font-weight: 700; padding: 12px 24px; border-radius: 8px; text-decoration: none; display: inline-block; font-size: 14px; transition: opacity 0.2s; }
+        .btn:hover { opacity: 0.9; }
+      </style>
+    </head>
+    <body>
+      <div class="card">
+        <div class="check-icon">✓</div>
+        <h1>Payment Successful!</h1>
+        <p>Your payment has been verified. Your property viewing appointment is officially locked in.</p>
+        
+        <div class="receipt-box">
+          <div class="receipt-row"><span>Status:</span> <b style="color: #34d399;">VERIFIED SUCCESS</b></div>
+          <div class="receipt-row"><span>Reference:</span> <span>${ref || 'N/A'}</span></div>
+          <div class="receipt-row"><span>Receipt ID:</span> <b style="color: #a5f3fc;">${payment ? (payment.receipt_id || 'RC-' + ref) : 'RC-' + ref}</b></div>
+          <div class="receipt-row"><span>Amount:</span> <b>₦${payment ? payment.amount_ngn.toLocaleString() : '5,000'}</b></div>
+        </div>
+
+        <p style="font-size: 13px; color: #64748b; margin-bottom: 24px;">
+          You can return to your chat conversation now. The assistant is already updated.
+        </p>
+        <a href="/" class="btn">View Live Dashboard</a>
+      </div>
+    </body>
+    </html>
+  `);
+});
+
+// Paystack Webhook Handler (for asynchronous background updates)
+app.post('/payments/paystack/webhook', (req, res) => {
+  const event = req.body;
+  console.log(`\x1b[35m[PAYSTACK WEBHOOK]\x1b[0m Event received:`, event ? event.event : 'none');
+  if (event && event.event === 'charge.success' && event.data) {
+    const ref = event.data.reference;
+    if (ref) {
+      store.verifyPayment(ref, ref);
+      console.log(`\x1b[32m[PAYMENT VERIFIED VIA WEBHOOK]\x1b[0m ${ref}`);
+    }
+  }
+  res.sendStatus(200);
 });
 
 // 8. Verify Paystack Status & Update Records

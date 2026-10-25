@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const STATE_FILE = path.join(__dirname, 'state.json');
+const STATE_FILE = process.env.VERCEL ? path.join('/tmp', 'state.json') : path.join(__dirname, 'state.json');
 const PROPERTIES = require('./properties.json');
 
 // Initial default state

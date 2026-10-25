@@ -163,7 +163,12 @@ app.post('/payments/paystack/initialize', async (req, res) => {
           email: `${(lead_id || 'customer').replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}@propertypro.ng`,
           amount: amount_kobo,
           reference: reference,
-          callback_url: `https://property-assistant-dun.vercel.app/payment/callback`
+          callback_url: `https://property-assistant-dun.vercel.app/payment/callback`,
+          metadata: {
+            lead_id: lead_id || 'PROSPECT',
+            booking_id: booking_id || `BK-${reference.slice(-4)}`,
+            fee_id: fee_id || 'FEE-INSPECT'
+          }
         })
       });
       const data = await response.json();
@@ -327,14 +332,81 @@ app.post('/handoffs/create', (req, res) => {
   });
 });
 
-// API State Inspection Endpoint
-app.get('/api/state', (req, res) => {
-  res.json(store.getAllState());
+// Helper to fetch live transactions directly from Paystack API and merge with state
+async function getUnifiedState() {
+  const localState = store.getAllState();
+  let payments = [...localState.payments];
+  let bookings = [...localState.bookings];
+
+  if (PAYSTACK_SECRET_KEY) {
+    try {
+      const response = await fetch('https://api.paystack.co/transaction?perPage=25', {
+        headers: {
+          'Authorization': `Bearer ${PAYSTACK_SECRET_KEY}`
+        }
+      });
+      const data = await response.json();
+      if (data.status && Array.isArray(data.data)) {
+        const paystackPayments = data.data.map(tx => {
+          const meta = tx.metadata || {};
+          const isSuccess = tx.status === 'success';
+          
+          if (meta.booking_id && !bookings.some(b => b.booking_id === meta.booking_id)) {
+            bookings.unshift({
+              booking_id: meta.booking_id,
+              lead_id: meta.lead_id || (tx.customer ? tx.customer.email : 'Customer'),
+              property_title: meta.property_title || 'Viewing Inspection',
+              slot_time: meta.slot_time || 'Scheduled Viewing',
+              status: isSuccess ? 'confirmed' : 'pending_payment',
+              assigned_agent: { name: 'Agent Tunde', phone: '+2348023456789' },
+              created_at: tx.created_at
+            });
+          } else if (meta.booking_id && isSuccess) {
+            const existingB = bookings.find(b => b.booking_id === meta.booking_id);
+            if (existingB) existingB.status = 'confirmed';
+          }
+
+          return {
+            payment_id: tx.reference,
+            reference: tx.reference,
+            amount_ngn: tx.amount / 100,
+            status: isSuccess ? 'verified_success' : tx.status,
+            receipt_id: isSuccess ? `RC-${tx.reference}` : 'Pending',
+            created_at: tx.created_at,
+            customer_email: tx.customer ? tx.customer.email : 'N/A'
+          };
+        });
+
+        const seen = new Set();
+        payments = [...paystackPayments, ...payments].filter(p => {
+          if (seen.has(p.reference)) return false;
+          seen.add(p.reference);
+          return true;
+        });
+      }
+    } catch (err) {
+      console.error('Error fetching live transactions from Paystack:', err.message);
+    }
+  }
+
+  return {
+    total_properties: localState.total_properties,
+    leads: localState.leads,
+    bookings,
+    payments,
+    handoffs: localState.handoffs
+  };
+}
+
+// API State Inspection Endpoint (Live Paystack Sync)
+app.get('/api/state', async (req, res) => {
+  const unified = await getUnifiedState();
+  res.json(unified);
 });
 
 // Visual Live Dashboard on Root URL
-app.get('/', (req, res) => {
-  const stateData = store.getAllState();
+app.get('/', async (req, res) => {
+  const stateData = await getUnifiedState();
   res.send(`
     <!DOCTYPE html>
     <html lang="en">

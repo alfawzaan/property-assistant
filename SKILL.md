@@ -30,9 +30,9 @@ Do not use it for:
    - If status is `pending` or `failed`, explain that the payment hasn't cleared yet and offer to check again or retry.
 6. **Handle Purchase Offers & Agent Connection**:
    - When a buyer decides to make an offer or initiate a purchase, record their offer details via `update_lead`.
-   - Consult `references/policies.md` on agent ownership. Call `resolve_agent` or `assign_agent` so the designated sales agent can follow up with closing contracts.
-7. **Set reminders**: If the prospect asks to be contacted later or before an inspection, call `schedule_follow_up`.
-8. **Escalate when stuck**: Follow `references/policies.md` for human escalation triggers (legal title requests, complaints, contract signing). Call `create_handoff` and share the summary with a human agent.
+   - Provide the assigned sales agent's contact details from the property listing so the prospect knows who is handling the listing.
+   - For formal contract drafting, legal deed verification, or closing agreements, escalate via `create_handoff`.
+7. **Escalate when required**: Follow `references/policies.md` for human escalation triggers (legal title requests, complaints, contract signing, or closing negotiations). Call `create_handoff` and share the summary with a human agent.
 
 ## Rules
 - Actively assist buyers: guide them through finding homes for sale, scheduling viewings, submitting offers, and connecting with the closing agent.

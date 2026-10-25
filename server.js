@@ -676,6 +676,90 @@ app.get('/', async (req, res) => {
           </tbody>
         </table>
 
+        <h2>Recorded Customer Leads (${stateData.leads.length})</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Lead ID & Channel</th>
+              <th>Customer Contact</th>
+              <th>Location & Type</th>
+              <th>Budget & Bedrooms</th>
+              <th>Requirement / Offer Notes</th>
+              <th>Assigned Specialist</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${stateData.leads.length === 0 ? '<tr><td colspan="6" style="color: #64748b; text-align: center; padding: 24px;">No customer leads recorded yet.</td></tr>' : 
+              stateData.leads.map(l => `
+                <tr>
+                  <td>
+                    <b style="color: #38bdf8;">${l.lead_id}</b>
+                    <div style="color: #64748b; font-size: 11px; margin-top: 2px;">Channel: ${l.channel_id || 'chat'}</div>
+                  </td>
+                  <td>
+                    <div style="font-weight: 500; color: #f8fafc;">${l.customer_email || l.sender_id || 'N/A'}</div>
+                  </td>
+                  <td>
+                    <div>📍 ${l.location || 'Lagos'}</div>
+                    <span style="font-size: 10px; text-transform: uppercase; color: #94a3b8; background: #1e293b; padding: 2px 6px; border-radius: 4px;">${l.transaction_type ? 'LOOKING TO ' + l.transaction_type.toUpperCase() : 'INQUIRY'}</span>
+                  </td>
+                  <td>
+                    <b style="color: #34d399;">${l.budget_max_ngn ? '₦' + l.budget_max_ngn.toLocaleString() : 'Open Budget'}</b>
+                    <div style="color: #94a3b8; font-size: 11px;">${l.bedrooms ? l.bedrooms + ' Bedrooms' : 'Flexible'}</div>
+                  </td>
+                  <td>
+                    <div style="color: #cbd5e1; font-size: 12px; max-width: 280px;">${l.offer_details || 'Requirements captured from chat inquiry.'}</div>
+                  </td>
+                  <td>
+                    <div style="font-weight: 500;">${l.owner_agent_id || 'Tunde Balogun'}</div>
+                  </td>
+                </tr>
+              `).join('')}
+          </tbody>
+        </table>
+
+        <h2>Human Escalations & Handoffs (${stateData.handoffs.length})</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Handoff ID & Date</th>
+              <th>Lead ID</th>
+              <th>Escalation Reason</th>
+              <th>Summary & Context</th>
+              <th>Assigned Officer</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${stateData.handoffs.length === 0 ? '<tr><td colspan="6" style="color: #64748b; text-align: center; padding: 24px;">No human handoffs recorded. The AI assistant is resolving conversations autonomously.</td></tr>' : 
+              stateData.handoffs.map(h => {
+                const dateStr = h.created_at ? new Date(h.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Recent';
+                return `
+                <tr>
+                  <td>
+                    <b style="color: #f87171;">${h.handoff_id}</b>
+                    <div style="color: #64748b; font-size: 11px; margin-top: 2px;">${dateStr}</div>
+                  </td>
+                  <td>
+                    <b style="color: #f1f5f9;">${h.lead_id}</b>
+                  </td>
+                  <td>
+                    <span style="color: #fca5a5; font-weight: 600;">${h.reason}</span>
+                  </td>
+                  <td>
+                    <div style="color: #cbd5e1; font-size: 12px; max-width: 340px;">${h.summary}</div>
+                  </td>
+                  <td>
+                    <div style="font-weight: 500;">${h.assigned_officer || 'Senior Closing Officer'}</div>
+                  </td>
+                  <td>
+                    <span class="status-pill status-escalated">ESCALATED TO HUMAN</span>
+                  </td>
+                </tr>
+              `}).join('')}
+          </tbody>
+        </table>
+
         <h2>Verified Property Inventory Catalog (${store.getProperties().length} Listings)</h2>
         <div style="display: flex; flex-direction: column; gap: 20px; margin-bottom: 32px;">
           ${store.getProperties().map(p => `

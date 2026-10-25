@@ -29,8 +29,8 @@ PAYSTACK_SECRET_KEY=sk_test_xxxx
 ```
 
 ## Connecting to Chord
-- **Tools**: Import `property-tools.json` into Chord to give the agent access to the backend routes.
-- **Agent Instructions**: See `SKILL.md` and `references/policies.md` for guidelines on tone, inspection fees, and human escalation handoffs.
+- **Tools**: Import `property-tools.json` into Chord to give the agent access to the backend routes while you ensure that you update the server.url key to your server base URL if you are deploying to your own server.
+- **Agent Instructions**: See `SKILL.md`, `references/faq.md` and `references/policies.md` for guidelines on tone, inspection fees, and human escalation handoffs.
 
 ## Deploying to Vercel
 1. Push your code to GitHub and import the project into Vercel.

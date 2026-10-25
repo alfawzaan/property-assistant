@@ -665,37 +665,70 @@ app.get('/', async (req, res) => {
           </tbody>
         </table>
 
-        <h2>Live Property Catalog Sample</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Property</th>
-              <th>Location</th>
-              <th>Price</th>
-              <th>Dedicated Agent</th>
-              <th>Type</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${store.getProperties().map(p => `
-              <tr>
-                <td><b style="color: #38bdf8;">${p.property_id}</b></td>
-                <td>
-                  <div style="font-weight: 600;">${p.title}</div>
-                  <div style="color: #64748b; font-size: 11px;">${p.bedrooms} Bedrooms • ${p.furnishing}</div>
-                </td>
-                <td>${p.location}</td>
-                <td><b style="color: #34d399; font-size: 14px;">${p.price_formatted}</b></td>
-                <td>
-                  <div>${p.agent ? p.agent.name : 'Tunde Bakare'}</div>
-                  <div style="color: #64748b; font-size: 11px;">${p.agent ? p.agent.phone : '+234 803 123 4567'}</div>
-                </td>
-                <td><span style="text-transform: uppercase; font-size: 11px; color: #94a3b8; background: #1e293b; padding: 3px 8px; border-radius: 4px;">FOR ${p.transaction_type}</span></td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
+        <h2>Verified Property Inventory Catalog (${store.getProperties().length} Listings)</h2>
+        <div style="display: flex; flex-direction: column; gap: 20px; margin-bottom: 32px;">
+          ${store.getProperties().map(p => `
+            <div style="background: #131d31; border: 1px solid #1e293b; border-radius: 12px; padding: 22px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
+                <div>
+                  <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                    <span style="background: #0284c7; color: #f0f9ff; font-weight: 800; font-family: monospace; font-size: 12px; padding: 3px 8px; border-radius: 4px;">${p.property_id}</span>
+                    <span style="background: ${p.transaction_type === 'buy' ? '#064e3b' : '#312e81'}; color: ${p.transaction_type === 'buy' ? '#34d399' : '#a5b4fc'}; font-weight: 700; font-size: 11px; padding: 3px 8px; border-radius: 4px; text-transform: uppercase;">FOR ${p.transaction_type}</span>
+                    <span style="color: #94a3b8; font-size: 12px;">${p.property_type}</span>
+                  </div>
+                  <h3 style="margin: 0; font-size: 18px; color: #f8fafc; font-weight: 700;">${p.title}</h3>
+                  <div style="color: #94a3b8; font-size: 13px; margin-top: 4px;">📍 ${p.location}</div>
+                </div>
+                <div style="text-align: right;">
+                  <div style="font-size: 22px; font-weight: 800; color: #34d399;">${p.price_formatted}</div>
+                  ${p.service_charge_formatted ? `<div style="color: #64748b; font-size: 11px; margin-top: 2px;">Service: ${p.service_charge_formatted}</div>` : ''}
+                </div>
+              </div>
+
+              <!-- Quick Specs Pills -->
+              <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px;">
+                <span style="background: #1e293b; color: #e2e8f0; font-size: 12px; padding: 4px 10px; border-radius: 6px; border: 1px solid #334155;">🛏️ ${p.bedrooms} Bedrooms</span>
+                <span style="background: #1e293b; color: #e2e8f0; font-size: 12px; padding: 4px 10px; border-radius: 6px; border: 1px solid #334155;">🚿 ${p.bathrooms} Bathrooms</span>
+                ${p.land_size_sqm ? `<span style="background: #1e293b; color: #e2e8f0; font-size: 12px; padding: 4px 10px; border-radius: 6px; border: 1px solid #334155;">📐 ${p.land_size_sqm}</span>` : ''}
+                ${p.furnishing ? `<span style="background: #1e293b; color: #e2e8f0; font-size: 12px; padding: 4px 10px; border-radius: 6px; border: 1px solid #334155;">🛋️ ${p.furnishing}</span>` : ''}
+                ${p.title_document ? `<span style="background: #0f2e22; color: #6ee7b7; font-size: 12px; padding: 4px 10px; border-radius: 6px; border: 1px solid #059669;">📜 ${p.title_document}</span>` : ''}
+              </div>
+
+              <!-- Full Detailed Description -->
+              <div style="background: #0b1120; border: 1px solid #1e293b; border-radius: 8px; padding: 14px; margin-bottom: 14px; font-size: 13px; line-height: 1.6; color: #cbd5e1;">
+                <b style="color: #38bdf8; display: block; margin-bottom: 6px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Architectural Overview & Description:</b>
+                ${p.description || 'Full architectural profile available on request.'}
+              </div>
+
+              <!-- Key Highlights & Landmarks -->
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-bottom: 14px; font-size: 12px;">
+                <div style="background: #1a2744; border: 1px solid #2563eb33; border-radius: 8px; padding: 12px;">
+                  <b style="color: #60a5fa; display: block; margin-bottom: 6px;">✨ Key Highlights:</b>
+                  <ul style="margin: 0; padding-left: 18px; color: #cbd5e1; line-height: 1.5;">
+                    ${(p.highlights || []).map(h => `<li>${h}</li>`).join('')}
+                  </ul>
+                </div>
+                <div style="background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 12px;">
+                  <b style="color: #fcd34d; display: block; margin-bottom: 6px;">📍 Neighborhood & Access:</b>
+                  <p style="margin: 0; color: #cbd5e1; line-height: 1.5;">${p.neighborhood_landmarks || 'Prime district access.'}</p>
+                  <div style="margin-top: 8px; color: #94a3b8;">
+                    <b>Available Inspection Slots:</b> ${(p.available_slots || []).join(' • ')}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Dedicated Agent Footer -->
+              <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #1e293b; padding-top: 12px; font-size: 12px; color: #94a3b8;">
+                <div>
+                  Dedicated Sales Agent: <b style="color: #f8fafc;">${p.agent ? p.agent.name : 'Tunde Balogun'}</b> (${p.agent ? p.agent.specialization : 'Prime Sales'})
+                </div>
+                <div>
+                  Direct Line: <a href="tel:${p.agent ? p.agent.phone : ''}" style="color: #38bdf8; text-decoration: none; font-weight: 600;">${p.agent ? p.agent.phone : '+234 802 345 6789'}</a>
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
 
         <p style="text-align: center; color: #64748b; font-size: 12px; margin-top: 40px;">
           Property Revenue OS • JSON API available at <a href="/api/state" style="color: #38bdf8;">/api/state</a>

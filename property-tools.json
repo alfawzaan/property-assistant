@@ -112,8 +112,31 @@
                       "property_id": { "type": "string" },
                       "title": { "type": "string" },
                       "location": { "type": "string" },
+                      "neighborhood": { "type": "string" },
+                      "bedrooms": { "type": "integer" },
+                      "bathrooms": { "type": "integer" },
                       "price_ngn": { "type": "number" },
+                      "price_formatted": { "type": "string" },
                       "transaction_type": { "type": "string" },
+                      "property_type": { "type": "string" },
+                      "land_size_sqm": { "type": "string" },
+                      "furnishing": { "type": "string" },
+                      "title_document": { "type": "string" },
+                      "service_charge_formatted": { "type": "string" },
+                      "description": { "type": "string" },
+                      "highlights": { "type": "array", "items": { "type": "string" } },
+                      "neighborhood_landmarks": { "type": "string" },
+                      "amenities": { "type": "array", "items": { "type": "string" } },
+                      "available_slots": { "type": "array", "items": { "type": "string" } },
+                      "inspection_fee_ngn": { "type": "number" },
+                      "agent": {
+                        "type": "object",
+                        "properties": {
+                          "name": { "type": "string" },
+                          "phone": { "type": "string" },
+                          "specialization": { "type": "string" }
+                        }
+                      },
                       "available": { "type": "boolean" }
                     }
                   }

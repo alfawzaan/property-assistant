@@ -7,7 +7,7 @@
   },
   "servers": [
     {
-      "url": "https://api.youragency.com/v1",
+      "url": "https://property-assistant-dun.vercel.app",
       "description": "Production or mock webhook backend"
     }
   ],

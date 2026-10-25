@@ -1,0 +1,170 @@
+[
+  {
+    "property_id": "IK-402",
+    "title": "4-Bedroom Luxury Waterfront Terrace with BQ",
+    "location": "Parkview Estate, Ikoyi, Lagos",
+    "neighborhood": "Ikoyi",
+    "bedrooms": 4,
+    "bathrooms": 5,
+    "price_ngn": 240000000,
+    "price_formatted": "₦240,000,000",
+    "transaction_type": "buy",
+    "property_type": "Terrace Duplex",
+    "amenities": ["24/7 Power", "Waterfront View", "Swimming Pool", "Fitted Kitchen", "Maid's Room (BQ)"],
+    "inspection_fee_ngn": 5000,
+    "available_slots": ["Thursday 02:00 PM", "Saturday 11:00 AM", "Saturday 02:00 PM"],
+    "agent": {
+      "name": "Tunde Balogun",
+      "phone": "+234 802 345 6789",
+      "specialization": "Ikoyi Luxury Sales"
+    },
+    "available": true
+  },
+  {
+    "property_id": "IK-405",
+    "title": "5-Bedroom Fully Detached Mansion with Cinema",
+    "location": "Old Ikoyi (Off Bourdillon Road), Lagos",
+    "neighborhood": "Ikoyi",
+    "bedrooms": 5,
+    "bathrooms": 6,
+    "price_ngn": 450000000,
+    "price_formatted": "₦450,000,000",
+    "transaction_type": "buy",
+    "property_type": "Detached House",
+    "amenities": ["Private Elevator", "Private Cinema", "Smart Home Automation", "Olympic Pool", "2 BQ Units"],
+    "inspection_fee_ngn": 10000,
+    "available_slots": ["Friday 11:00 AM", "Saturday 01:00 PM", "Sunday 04:00 PM"],
+    "agent": {
+      "name": "Tunde Balogun",
+      "phone": "+234 802 345 6789",
+      "specialization": "Ikoyi Luxury Sales"
+    },
+    "available": true
+  },
+  {
+    "property_id": "LK-301",
+    "title": "3-Bedroom Contemporary Serviced Flat",
+    "location": "Admiralty Way, Lekki Phase 1, Lagos",
+    "neighborhood": "Lekki Phase 1",
+    "bedrooms": 3,
+    "bathrooms": 3,
+    "price_ngn": 7500000,
+    "price_formatted": "₦7,500,000 / year",
+    "transaction_type": "rent",
+    "property_type": "Apartment",
+    "amenities": ["24/7 Electricity", "Uniformed Security", "CCTV", "Dedicated Transformer", "Gym"],
+    "inspection_fee_ngn": 5000,
+    "available_slots": ["Saturday 10:00 AM", "Saturday 12:30 PM", "Sunday 02:00 PM"],
+    "agent": {
+      "name": "Chioma Eze",
+      "phone": "+234 803 987 6543",
+      "specialization": "Lekki Residential Rentals"
+    },
+    "available": true
+  },
+  {
+    "property_id": "LK-304",
+    "title": "3-Bedroom Ocean View Penthouse",
+    "location": "Off Freedom Way, Lekki Phase 1, Lagos",
+    "neighborhood": "Lekki Phase 1",
+    "bedrooms": 3,
+    "bathrooms": 4,
+    "price_ngn": 8000000,
+    "price_formatted": "₦8,000,000 / year",
+    "transaction_type": "rent",
+    "property_type": "Penthouse",
+    "amenities": ["Ocean Terrace", "24/7 Security", "Inverter Backup", "Ample Parking", "Elevator"],
+    "inspection_fee_ngn": 5000,
+    "available_slots": ["Saturday 11:00 AM", "Saturday 02:00 PM", "Sunday 03:30 PM"],
+    "agent": {
+      "name": "Chioma Eze",
+      "phone": "+234 803 987 6543",
+      "specialization": "Lekki Residential Rentals"
+    },
+    "available": true
+  },
+  {
+    "property_id": "LK-410",
+    "title": "4-Bedroom Semi-Detached Duplex with BQ",
+    "location": "Chevron Drive, Lekki, Lagos",
+    "neighborhood": "Lekki",
+    "bedrooms": 4,
+    "bathrooms": 4,
+    "price_ngn": 120000000,
+    "price_formatted": "₦120,000,000",
+    "transaction_type": "buy",
+    "property_type": "Semi-Detached Duplex",
+    "amenities": ["Gated Estate", "Clean Water Plant", "Children Play Area", "Fitted Wardrobes"],
+    "inspection_fee_ngn": 5000,
+    "available_slots": ["Friday 03:00 PM", "Saturday 11:30 AM", "Saturday 03:00 PM"],
+    "agent": {
+      "name": "Chioma Eze",
+      "phone": "+234 803 987 6543",
+      "specialization": "Lekki Sales"
+    },
+    "available": true
+  },
+  {
+    "property_id": "VI-202",
+    "title": "2-Bedroom Luxury Serviced High-Rise Suite",
+    "location": "Ahmadu Bello Way, Victoria Island, Lagos",
+    "neighborhood": "Victoria Island",
+    "bedrooms": 2,
+    "bathrooms": 2,
+    "price_ngn": 12000000,
+    "price_formatted": "₦12,000,000 / year",
+    "transaction_type": "rent",
+    "property_type": "High-Rise Apartment",
+    "amenities": ["24/7 Concierge", "Infinity Pool", "Ocean Facing Balcony", "Central AC", "Gym"],
+    "inspection_fee_ngn": 5000,
+    "available_slots": ["Wednesday 04:00 PM", "Saturday 01:00 PM", "Sunday 02:00 PM"],
+    "agent": {
+      "name": "Femi Adeleke",
+      "phone": "+234 805 111 2233",
+      "specialization": "VI Commercial & Luxury"
+    },
+    "available": true
+  },
+  {
+    "property_id": "AB-501",
+    "title": "5-Bedroom Diplomatic Villa with Swimming Pool",
+    "location": "Maitama District, Abuja",
+    "neighborhood": "Maitama",
+    "bedrooms": 5,
+    "bathrooms": 6,
+    "price_ngn": 650000000,
+    "price_formatted": "₦650,000,000",
+    "transaction_type": "buy",
+    "property_type": "Detached Villa",
+    "amenities": ["Bulletproof Doors", "Large Green Lawn", "Perimeter Electric Fence", "2-Bedroom Guest Chalet"],
+    "inspection_fee_ngn": 10000,
+    "available_slots": ["Thursday 11:00 AM", "Saturday 10:00 AM", "Saturday 02:00 PM"],
+    "agent": {
+      "name": "Aliyu Mohammed",
+      "phone": "+234 809 444 5566",
+      "specialization": "Abuja Prime District"
+    },
+    "available": true
+  },
+  {
+    "property_id": "AB-302",
+    "title": "3-Bedroom Family Bungalow with Large Compound",
+    "location": "Gwarinpa Estate, 3rd Avenue, Abuja",
+    "neighborhood": "Gwarinpa",
+    "bedrooms": 3,
+    "bathrooms": 3,
+    "price_ngn": 85000000,
+    "price_formatted": "₦85,000,000",
+    "transaction_type": "buy",
+    "property_type": "Bungalow",
+    "amenities": ["Spacious Compound (parks 6 cars)", "Prepaid Meter", "Borehole Water", "Pop Ceilings"],
+    "inspection_fee_ngn": 5000,
+    "available_slots": ["Saturday 11:00 AM", "Saturday 03:00 PM", "Sunday 01:00 PM"],
+    "agent": {
+      "name": "Aliyu Mohammed",
+      "phone": "+234 809 444 5566",
+      "specialization": "Abuja Prime District"
+    },
+    "available": true
+  }
+]

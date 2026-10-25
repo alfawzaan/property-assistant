@@ -34,7 +34,8 @@ PAYSTACK_SECRET_KEY=sk_test_xxxx
 
 ## Development & AI Tooling
 - **ChatGPT**: Used during the initial research phase to identify high-value business operations that could be automated to prevent costly revenue leaks, helping narrow the focus down to structured real estate developers and brokerages.
-- **Google Antigravity**: Used as the agentic coding and implementation assistant to develop, test, and refactor the backend REST API, Firestore data layer, Paystack flow, and live revenue dashboard.
+- **Chord Assistant**: Used to understand how specific parts of the Chord framework operate and clarify expected teammate behaviors.
+- **Google Antigravity**: Used as the agentic coding and implementation assistant to develop, test, and refactor the backend REST API, Firestore data layer, Paystack flow, and live revenue dashboard, as well as refining and formatting submission documents from raw drafts.
 - **Chord**: The agent itself was built, configured, and deployed directly on Chord, utilizing its native skill execution, tool schemas, and teammate chat environment.
 
 ## Deploying to Vercel

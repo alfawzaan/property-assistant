@@ -148,6 +148,16 @@ app.post('/payments/paystack/initialize', async (req, res) => {
   const amount_kobo = isReserve ? 50000000 : 500000;
   const reference = `REF-${Date.now()}`;
 
+  // Find associated booking or lead details to enrich Paystack metadata
+  let booking = null;
+  if (booking_id) {
+    booking = await store.getBookingById(booking_id);
+  }
+  if (!booking && lead_id) {
+    const allState = await store.getAllState();
+    booking = (allState.bookings || []).find(b => b.lead_id === lead_id);
+  }
+
   let authUrl = `https://checkout.paystack.com/mock-pay-${reference}`;
 
   // Call real Paystack API if key exists
@@ -166,8 +176,13 @@ app.post('/payments/paystack/initialize', async (req, res) => {
           callback_url: `https://property-assistant-dun.vercel.app/payment/callback`,
           metadata: {
             lead_id: lead_id || 'PROSPECT',
-            booking_id: booking_id || `BK-${reference.slice(-4)}`,
-            fee_id: fee_id || 'FEE-INSPECT'
+            booking_id: booking_id || (booking ? booking.booking_id : `BK-${reference.slice(-4)}`),
+            fee_id: fee_id || 'FEE-INSPECT',
+            fee_name: isReserve ? 'Reservation Holding Deposit' : 'Inspection Logistics Fee',
+            property_title: booking ? booking.property_title : undefined,
+            property_location: booking ? (booking.property_location || booking.location) : undefined,
+            slot_time: booking ? booking.slot_time : undefined,
+            agent_name: booking && booking.assigned_agent ? (booking.assigned_agent.name || booking.assigned_agent) : undefined
           }
         })
       });
@@ -184,8 +199,11 @@ app.post('/payments/paystack/initialize', async (req, res) => {
   const paymentRecord = await store.createPayment({
     payment_id: reference,
     lead_id,
-    booking_id,
+    booking_id: booking_id || (booking ? booking.booking_id : undefined),
     fee_id: fee_id || "FEE-INSPECT",
+    fee_name: isReserve ? 'Reservation Holding Deposit' : 'Inspection Logistics Fee',
+    property_title: booking ? booking.property_title : undefined,
+    property_location: booking ? (booking.property_location || booking.location) : undefined,
     amount_kobo,
     amount_ngn: amount_kobo / 100,
     reference,
@@ -200,7 +218,6 @@ app.post('/payments/paystack/initialize', async (req, res) => {
   });
 });
 
-// Paystack Return Callback (Where Paystack redirects the customer upon payment completion)
 // Paystack Return Callback (Where Paystack redirects the customer upon payment completion)
 app.get('/payment/callback', async (req, res) => {
   try {
@@ -388,30 +405,51 @@ async function getUnifiedState() {
         const paystackPayments = propertyAssistantTxs.map(tx => {
           const meta = tx.metadata || {};
           const isSuccess = tx.status === 'success';
-          
+          const feeName = meta.fee_name || (meta.fee_id === 'FEE-RESERVE' ? 'Reservation Deposit' : 'Inspection Logistics Fee');
+          const channelName = tx.channel ? tx.channel.toUpperCase() : 'CARD';
+          const customerEmail = tx.customer ? tx.customer.email : (meta.lead_id ? `${meta.lead_id.toLowerCase()}@propertypro.ng` : 'N/A');
+
+          // Sync booking if metadata exists and not yet recorded
           if (meta.booking_id && !bookings.some(b => b.booking_id === meta.booking_id)) {
             bookings.unshift({
               booking_id: meta.booking_id,
-              lead_id: meta.lead_id || (tx.customer ? tx.customer.email : 'Customer'),
-              property_title: meta.property_title || 'Viewing Inspection',
-              slot_time: meta.slot_time || 'Scheduled Viewing',
+              lead_id: meta.lead_id || customerEmail,
+              property_title: meta.property_title || (meta.fee_id === 'FEE-RESERVE' ? 'Property Reservation' : 'Private Inspection Viewing'),
+              property_location: meta.property_location || 'Lekki / Ikoyi',
+              slot_time: meta.slot_time || 'Scheduled Viewing Slot',
               status: isSuccess ? 'confirmed' : 'pending_payment',
-              assigned_agent: { name: 'Agent Tunde', phone: '+2348023456789' },
-              created_at: tx.created_at
+              assigned_agent: { 
+                name: meta.agent_name || 'Tunde Bakare', 
+                phone: '+234 803 123 4567' 
+              },
+              receipt_id: isSuccess ? `RC-${tx.reference}` : null,
+              created_at: tx.created_at,
+              amount_ngn: tx.amount / 100
             });
           } else if (meta.booking_id && isSuccess) {
             const existingB = bookings.find(b => b.booking_id === meta.booking_id);
-            if (existingB) existingB.status = 'confirmed';
+            if (existingB) {
+              existingB.status = 'confirmed';
+              existingB.receipt_id = `RC-${tx.reference}`;
+            }
           }
 
           return {
             payment_id: tx.reference,
             reference: tx.reference,
             amount_ngn: tx.amount / 100,
+            fee_name: feeName,
             status: isSuccess ? 'verified_success' : tx.status,
             receipt_id: isSuccess ? `RC-${tx.reference}` : 'Pending',
+            channel: channelName,
+            gateway_response: tx.gateway_response || (isSuccess ? 'Successful' : 'Pending'),
             created_at: tx.created_at,
-            customer_email: tx.customer ? tx.customer.email : 'N/A'
+            paid_at: tx.paid_at || tx.created_at,
+            customer_email: customerEmail,
+            lead_id: meta.lead_id || 'N/A',
+            booking_id: meta.booking_id || 'N/A',
+            property_title: meta.property_title || 'N/A',
+            property_location: meta.property_location || 'N/A'
           };
         });
 
@@ -444,113 +482,186 @@ app.get('/api/state', async (req, res) => {
 
 // Visual Live Dashboard on Root URL
 app.get('/', async (req, res) => {
+  const { getFirestore } = require('./data/firebase');
+  const isFirestoreActive = !!getFirestore();
   const stateData = await getUnifiedState();
+
   res.send(`
     <!DOCTYPE html>
     <html lang="en">
     <head>
       <meta charset="UTF-8">
-      <title>Property Assistant OS — Live Status & Database</title>
+      <title>Property Assistant OS — Revenue & Booking Dashboard</title>
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 24px; }
-        .container { max-width: 1100px; margin: 0 auto; }
-        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 16px; margin-bottom: 24px; }
-        .badge { background: #10b981; color: #022c22; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 32px; }
-        .card { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 18px; }
-        .card h3 { margin: 0 0 8px 0; font-size: 14px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
-        .card .stat { font-size: 28px; font-weight: bold; color: #38bdf8; }
-        h2 { font-size: 18px; margin-top: 24px; margin-bottom: 12px; color: #e2e8f0; border-left: 4px solid #38bdf8; padding-left: 10px; }
-        table { width: 100%; border-collapse: collapse; background: #1e293b; border-radius: 8px; overflow: hidden; margin-bottom: 24px; font-size: 13px; }
-        th, td { padding: 12px 14px; text-align: left; border-bottom: 1px solid #334155; }
-        th { background: #0f172a; color: #94a3b8; font-weight: 600; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0b1120; color: #f8fafc; margin: 0; padding: 24px; line-height: 1.5; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e293b; padding-bottom: 20px; margin-bottom: 28px; }
+        .badge { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .badge-online { background: #064e3b; color: #34d399; border: 1px solid #059669; }
+        .badge-firestore { background: #0c4a6e; color: #38bdf8; border: 1px solid #0284c7; }
+        .badge-fallback { background: #78350f; color: #fcd34d; border: 1px solid #d97706; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 32px; }
+        .card { background: #131d31; border: 1px solid #1e293b; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3); }
+        .card h3 { margin: 0 0 8px 0; font-size: 13px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600; }
+        .card .stat { font-size: 32px; font-weight: 800; color: #38bdf8; }
+        .card .subtext { font-size: 12px; color: #64748b; margin-top: 4px; }
+        h2 { font-size: 18px; margin-top: 36px; margin-bottom: 14px; color: #e2e8f0; display: flex; align-items: center; gap: 8px; }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; background: #131d31; border: 1px solid #1e293b; border-radius: 12px; overflow: hidden; margin-bottom: 32px; font-size: 13px; }
+        th, td { padding: 14px 16px; text-align: left; border-bottom: 1px solid #1e293b; vertical-align: middle; }
+        th { background: #0f172a; color: #94a3b8; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
         tr:last-child td { border-bottom: none; }
-        .status-pill { padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
-        .status-confirmed, .status-verified { background: #064e3b; color: #34d399; }
-        .status-pending { background: #78350f; color: #fcd34d; }
-        .status-escalated { background: #7f1d1d; color: #fca5a5; }
-        .code-box { background: #020617; padding: 12px; border-radius: 6px; font-family: monospace; font-size: 12px; color: #a5f3fc; overflow-x: auto; }
+        tr:hover td { background: #1a2744; }
+        .status-pill { padding: 4px 10px; border-radius: 999px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block; }
+        .status-confirmed, .status-verified { background: #064e3b; color: #34d399; border: 1px solid #059669; }
+        .status-pending { background: #78350f; color: #fcd34d; border: 1px solid #b45309; }
+        .status-escalated { background: #7f1d1d; color: #fca5a5; border: 1px solid #b91c1c; }
+        .btn-refresh { background: #1e293b; color: #38bdf8; border: 1px solid #334155; padding: 6px 14px; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: 600; transition: background 0.2s; }
+        .btn-refresh:hover { background: #334155; }
       </style>
     </head>
     <body>
       <div class="container">
         <header>
           <div>
-            <h1 style="margin: 0; font-size: 22px;">Property Assistant OS — Backend Status</h1>
-            <p style="margin: 4px 0 0 0; color: #94a3b8; font-size: 13px;">Live Mock & Paystack API for Chord Teammates</p>
+            <h1 style="margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">Property Assistant OS — Revenue Dashboard</h1>
+            <p style="margin: 6px 0 0 0; color: #94a3b8; font-size: 13px;">Real-time inspection bookings, verified Paystack payments, and inventory management for Chord Teammates</p>
           </div>
-          <div>
-            <span class="badge">● Online (24/7)</span>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <a href="/" class="btn-refresh">↻ Refresh</a>
+            <span class="badge badge-online">● Agent Live</span>
+            ${isFirestoreActive ? '<span class="badge badge-firestore">● Firestore DB Active</span>' : '<span class="badge badge-fallback">● Paystack Sync Mode</span>'}
           </div>
         </header>
 
         <div class="grid">
           <div class="card">
-            <h3>Active Listings</h3>
-            <div class="stat">${stateData.total_properties}</div>
-          </div>
-          <div class="card">
-            <h3>Recorded Leads</h3>
-            <div class="stat">${stateData.leads.length}</div>
+            <h3>Verified Revenue</h3>
+            <div class="stat">₦${stateData.payments.filter(p => p.status === 'verified_success').reduce((acc, p) => acc + (p.amount_ngn || 0), 0).toLocaleString()}</div>
+            <div class="subtext">From verified Paystack transactions</div>
           </div>
           <div class="card">
             <h3>Booked Viewings</h3>
             <div class="stat">${stateData.bookings.length}</div>
+            <div class="subtext">${stateData.bookings.filter(b => b.status === 'confirmed').length} confirmed with fees</div>
           </div>
           <div class="card">
-            <h3>Paystack Payments</h3>
-            <div class="stat">${stateData.payments.length}</div>
+            <h3>Recorded Leads</h3>
+            <div class="stat">${stateData.leads.length}</div>
+            <div class="subtext">Prospective buyers & renters</div>
+          </div>
+          <div class="card">
+            <h3>Active Listings</h3>
+            <div class="stat">${stateData.total_properties}</div>
+            <div class="subtext">Prime Lagos & Abuja properties</div>
           </div>
         </div>
 
-        <h2>Latest Bookings (${stateData.bookings.length})</h2>
+        <h2>Latest Inspection Bookings (${stateData.bookings.length})</h2>
         <table>
           <thead>
             <tr>
-              <th>Booking ID</th>
-              <th>Property</th>
-              <th>Slot Time</th>
+              <th>Booking ID & Date</th>
+              <th>Lead / Client</th>
+              <th>Property & Location</th>
+              <th>Viewing Slot</th>
+              <th>Assigned Agent</th>
+              <th>Fee & Receipt</th>
               <th>Status</th>
-              <th>Agent</th>
             </tr>
           </thead>
           <tbody>
-            ${stateData.bookings.length === 0 ? '<tr><td colspan="5" style="color: #64748b; text-align: center;">No bookings recorded yet. Chat with your teammate to book an inspection.</td></tr>' : 
-              stateData.bookings.map(b => `
+            ${stateData.bookings.length === 0 ? '<tr><td colspan="7" style="color: #64748b; text-align: center; padding: 28px;">No inspection bookings recorded yet. Chat with your assistant to schedule a viewing.</td></tr>' : 
+              stateData.bookings.map(b => {
+                const dateStr = b.created_at ? new Date(b.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Recent';
+                const agentName = b.assigned_agent ? (typeof b.assigned_agent === 'string' ? b.assigned_agent : (b.assigned_agent.name || 'Tunde Bakare')) : 'Tunde Bakare';
+                const agentPhone = b.assigned_agent && b.assigned_agent.phone ? b.assigned_agent.phone : '+234 803 123 4567';
+                const isConfirmed = b.status === 'confirmed';
+                return `
                 <tr>
-                  <td><b>${b.booking_id}</b></td>
-                  <td>${b.property_title}</td>
-                  <td>${b.slot_time}</td>
-                  <td><span class="status-pill status-${b.status.replace('_', '-')}">${b.status}</span></td>
-                  <td>${b.assigned_agent ? b.assigned_agent.name : 'Unassigned'}</td>
+                  <td>
+                    <b style="color: #38bdf8; font-size: 13px;">${b.booking_id}</b>
+                    <div style="color: #64748b; font-size: 11px; margin-top: 3px;">${dateStr}</div>
+                  </td>
+                  <td>
+                    <b style="color: #f1f5f9;">${b.lead_id || 'Prospect'}</b>
+                  </td>
+                  <td>
+                    <div style="font-weight: 600; color: #f8fafc;">${b.property_title || 'Viewing Inspection'}</div>
+                    <div style="color: #94a3b8; font-size: 11px; margin-top: 2px;">📍 ${b.property_location || b.location || 'Lekki Phase 1, Lagos'}</div>
+                  </td>
+                  <td>
+                    <span style="background: #1e293b; color: #f8fafc; padding: 4px 9px; border-radius: 6px; font-weight: 500; font-size: 12px; border: 1px solid #334155;">🗓️ ${b.slot_time}</span>
+                  </td>
+                  <td>
+                    <div style="font-weight: 500;">${agentName}</div>
+                    <div style="color: #64748b; font-size: 11px;">📞 ${agentPhone}</div>
+                  </td>
+                  <td>
+                    ${b.receipt_id ? `
+                      <span style="font-family: monospace; color: #34d399; font-weight: 700; font-size: 12px;">${b.receipt_id}</span>
+                      <div style="color: #94a3b8; font-size: 11px;">₦5,000 Paid</div>
+                    ` : `
+                      <span style="color: #fcd34d; font-size: 12px; font-weight: 600;">Pending Fee</span>
+                      <div style="color: #64748b; font-size: 11px;">₦5,000 required</div>
+                    `}
+                  </td>
+                  <td>
+                    <span class="status-pill status-${isConfirmed ? 'confirmed' : 'pending'}">${isConfirmed ? 'CONFIRMED' : 'PENDING PAYMENT'}</span>
+                  </td>
                 </tr>
-              `).join('')}
+              `}).join('')}
           </tbody>
         </table>
 
-        <h2>Paystack Transactions (${stateData.payments.length})</h2>
+        <h2>Paystack Payment Transactions (${stateData.payments.length})</h2>
         <table>
           <thead>
             <tr>
-              <th>Reference</th>
+              <th>Reference & Receipt</th>
+              <th>Customer / Lead</th>
+              <th>Purpose & Booking</th>
               <th>Amount</th>
+              <th>Channel & Gateway</th>
+              <th>Timestamp</th>
               <th>Status</th>
-              <th>Receipt</th>
-              <th>Time</th>
             </tr>
           </thead>
           <tbody>
-            ${stateData.payments.length === 0 ? '<tr><td colspan="5" style="color: #64748b; text-align: center;">No Paystack payments initiated yet.</td></tr>' : 
-              stateData.payments.map(p => `
+            ${stateData.payments.length === 0 ? '<tr><td colspan="7" style="color: #64748b; text-align: center; padding: 28px;">No Paystack payments initiated yet.</td></tr>' : 
+              stateData.payments.map(p => {
+                const isVerified = p.status === 'verified_success' || p.status === 'success';
+                const dateStr = p.created_at ? new Date(p.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'Recent';
+                return `
                 <tr>
-                  <td><code>${p.reference}</code></td>
-                  <td>₦${p.amount_ngn.toLocaleString()}</td>
-                  <td><span class="status-pill status-${p.status === 'verified_success' ? 'verified' : 'pending'}">${p.status}</span></td>
-                  <td>${p.receipt_id || 'Pending'}</td>
-                  <td>${new Date(p.created_at).toLocaleTimeString()}</td>
+                  <td>
+                    <a href="/payment/callback?reference=${p.reference}" target="_blank" style="color: #38bdf8; text-decoration: none; font-weight: 700; font-family: monospace; font-size: 13px;">${p.reference} ↗</a>
+                    <div style="color: #a5f3fc; font-family: monospace; font-size: 11px; margin-top: 3px;">${p.receipt_id || 'Pending Receipt'}</div>
+                  </td>
+                  <td>
+                    <div style="font-weight: 600; color: #f8fafc;">${p.customer_email || 'customer@propertypro.ng'}</div>
+                    <div style="color: #64748b; font-size: 11px; margin-top: 2px;">Lead ID: ${p.lead_id || 'N/A'}</div>
+                  </td>
+                  <td>
+                    <div style="font-weight: 600; color: #e2e8f0;">${p.fee_name || 'Inspection Logistics Fee'}</div>
+                    ${p.booking_id && p.booking_id !== 'N/A' ? `<div style="color: #94a3b8; font-size: 11px; margin-top: 2px;">Linked: ${p.booking_id}</div>` : ''}
+                  </td>
+                  <td>
+                    <b style="color: #34d399; font-size: 15px;">₦${(p.amount_ngn || 5000).toLocaleString()}</b>
+                    <div style="color: #64748b; font-size: 11px;">NGN</div>
+                  </td>
+                  <td>
+                    <span style="background: #1e3a8a; color: #93c5fd; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase;">${p.channel || 'CARD'}</span>
+                    <div style="color: #64748b; font-size: 11px; margin-top: 3px;">${p.gateway_response || 'Approved'}</div>
+                  </td>
+                  <td>
+                    <span style="color: #cbd5e1; font-size: 12px;">${dateStr}</span>
+                  </td>
+                  <td>
+                    <span class="status-pill status-${isVerified ? 'confirmed' : 'pending'}">${isVerified ? 'VERIFIED SUCCESS' : 'PENDING'}</span>
+                  </td>
                 </tr>
-              `).join('')}
+              `}).join('')}
           </tbody>
         </table>
 
@@ -562,24 +673,32 @@ app.get('/', async (req, res) => {
               <th>Property</th>
               <th>Location</th>
               <th>Price</th>
+              <th>Dedicated Agent</th>
               <th>Type</th>
             </tr>
           </thead>
           <tbody>
             ${store.getProperties().map(p => `
               <tr>
-                <td><b>${p.property_id}</b></td>
-                <td>${p.title}</td>
-                <td>${p.neighborhood}</td>
-                <td><b style="color: #38bdf8;">${p.price_formatted}</b></td>
-                <td><span style="text-transform: uppercase; font-size: 11px; color: #94a3b8;">${p.transaction_type}</span></td>
+                <td><b style="color: #38bdf8;">${p.property_id}</b></td>
+                <td>
+                  <div style="font-weight: 600;">${p.title}</div>
+                  <div style="color: #64748b; font-size: 11px;">${p.bedrooms} Bedrooms • ${p.furnishing}</div>
+                </td>
+                <td>${p.location}</td>
+                <td><b style="color: #34d399; font-size: 14px;">${p.price_formatted}</b></td>
+                <td>
+                  <div>${p.agent ? p.agent.name : 'Tunde Bakare'}</div>
+                  <div style="color: #64748b; font-size: 11px;">${p.agent ? p.agent.phone : '+234 803 123 4567'}</div>
+                </td>
+                <td><span style="text-transform: uppercase; font-size: 11px; color: #94a3b8; background: #1e293b; padding: 3px 8px; border-radius: 4px;">FOR ${p.transaction_type}</span></td>
               </tr>
             `).join('')}
           </tbody>
         </table>
 
         <p style="text-align: center; color: #64748b; font-size: 12px; margin-top: 40px;">
-          JSON API state available at <a href="/api/state" style="color: #38bdf8;">/api/state</a>
+          Property Revenue OS • JSON API available at <a href="/api/state" style="color: #38bdf8;">/api/state</a>
         </p>
       </div>
     </body>

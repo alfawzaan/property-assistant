@@ -58,9 +58,9 @@ app.post('/leads/update', async (req, res) => {
 });
 
 // 3. Search Real Properties Catalog
-app.post('/properties/search', (req, res) => {
+app.post('/properties/search', async (req, res) => {
   const { property_id, query, location, bedrooms, max_price_ngn, transaction_type } = req.body || {};
-  let properties = store.getProperties();
+  let properties = await store.getProperties();
 
   // 1. Direct property_id lookup
   if (property_id) {
@@ -105,16 +105,17 @@ app.post('/properties/search', (req, res) => {
 
   // Fallback to top properties if filter was too narrow
   if (properties.length === 0) {
-    properties = store.getProperties().slice(0, 3);
+    const all = await store.getProperties();
+    properties = all.slice(0, 3);
   }
 
   res.json(properties);
 });
 
 // 4. Check Viewing Slots (Reads property-specific slots)
-app.post('/bookings/check-slot', (req, res) => {
+app.post('/bookings/check-slot', async (req, res) => {
   const { property_id, preferred_date } = req.body;
-  const property = store.getPropertyById(property_id);
+  const property = await store.getPropertyById(property_id);
 
   if (property) {
     return res.json({
@@ -715,9 +716,9 @@ app.get('/', async (req, res) => {
           </tbody>
         </table>
 
-        <h2>Verified Property Inventory Catalog (${store.getProperties().length} Listings)</h2>
+        <h2>Verified Property Inventory Catalog (${(stateData.properties || []).length} Listings)</h2>
         <div style="display: flex; flex-direction: column; gap: 20px; margin-bottom: 32px;">
-          ${store.getProperties().map(p => `
+          ${(stateData.properties || []).map(p => `
             <div style="background: #131d31; border: 1px solid #1e293b; border-radius: 12px; padding: 22px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);">
               <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
                 <div>

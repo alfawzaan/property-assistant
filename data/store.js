@@ -1,42 +1,15 @@
-const fs = require('fs');
-const path = require('path');
 const { getFirestore } = require('./firebase');
-const PROPERTIES = require('./properties.json');
 
-const STATE_FILE = process.env.VERCEL ? path.join('/tmp', 'state.json') : path.join(__dirname, 'state.json');
-
-// Local in-memory state
+// In-memory cache synced with Cloud Firestore
 let state = {
-  properties: PROPERTIES,
+  properties: [],
   leads: {},
   bookings: {},
   payments: {},
   handoffs: {}
 };
 
-function loadLocalState() {
-  try {
-    if (fs.existsSync(STATE_FILE)) {
-      const data = fs.readFileSync(STATE_FILE, 'utf8');
-      const parsed = JSON.parse(data);
-      state.leads = parsed.leads || {};
-      state.bookings = parsed.bookings || {};
-      state.payments = parsed.payments || {};
-      state.handoffs = parsed.handoffs || {};
-    }
-  } catch (err) {}
-}
-
-function saveLocalState() {
-  try {
-    fs.writeFileSync(STATE_FILE, JSON.stringify({
-      leads: state.leads,
-      bookings: state.bookings,
-      payments: state.payments,
-      handoffs: state.handoffs
-    }, null, 2));
-  } catch (err) {}
-}
+function saveLocalState() {}
 
 // Sync properties from Cloud Firestore if connected
 async function syncPropertiesFromFirestore() {
@@ -47,15 +20,40 @@ async function syncPropertiesFromFirestore() {
       if (!snap.empty) {
         state.properties = snap.docs.map(doc => doc.data());
       }
-    } catch (err) {}
+    } catch (err) {
+      console.error('Firestore syncProperties error:', err.message);
+    }
   }
 }
 syncPropertiesFromFirestore();
 
 module.exports = {
-  getProperties: () => state.properties,
+  getProperties: async () => {
+    if (!state.properties || state.properties.length === 0) {
+      await syncPropertiesFromFirestore();
+    }
+    return state.properties;
+  },
   syncProperties: syncPropertiesFromFirestore,
-  getPropertyById: (id) => state.properties.find(p => p.property_id.toUpperCase() === (id || '').toUpperCase()),
+  getPropertyById: async (id) => {
+    if (!state.properties || state.properties.length === 0) {
+      await syncPropertiesFromFirestore();
+    }
+    const cleanId = (id || '').toUpperCase();
+    let prop = state.properties.find(p => (p.property_id || '').toUpperCase() === cleanId);
+    if (!prop) {
+      const db = getFirestore();
+      if (db) {
+        try {
+          const doc = await db.collection('properties').doc(cleanId).get();
+          if (doc.exists) {
+            prop = doc.data();
+          }
+        } catch (err) {}
+      }
+    }
+    return prop;
+  },
 
   // Leads
   getOrCreateLead: async (channel_id, sender_id) => {
@@ -161,7 +159,7 @@ module.exports = {
   createBooking: async (lead_id, property_id, slot_time) => {
     const db = getFirestore();
     const booking_id = `BK-${Math.floor(100 + Math.random() * 900)}`;
-    const property = state.properties.find(p => p.property_id.toUpperCase() === (property_id || '').toUpperCase());
+    const property = await module.exports.getPropertyById(property_id);
 
     const booking = {
       booking_id,
